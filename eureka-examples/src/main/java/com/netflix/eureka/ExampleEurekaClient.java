@@ -36,10 +36,9 @@ import com.netflix.discovery.EurekaClientConfig;
 
 /**
  * Sample Eureka client that discovers the example service using Eureka and sends requests.
- *
+ * <p>
  * In this example, the program tries to get the example from the EurekaClient, and then
  * makes a REST call to a supported service endpoint
- *
  */
 public class ExampleEurekaClient {
 
@@ -67,7 +66,7 @@ public class ExampleEurekaClient {
     public void sendRequestToServiceUsingEureka(EurekaClient eurekaClient) {
         // initialize the client
         // this is the vip address for the example service to talk to as defined in conf/sample-eureka-service.properties
-        String vipAddress = "sampleservice.mydomain.net";
+        String vipAddress = "eureka.mydomain.net";
 
         InstanceInfo nextServerInfo = null;
         try {
@@ -78,7 +77,7 @@ public class ExampleEurekaClient {
         }
 
         System.out.println("Found an instance of example service to talk to from eureka: "
-                + nextServerInfo.getVIPAddress() + ":" + nextServerInfo.getPort());
+                           + nextServerInfo.getVIPAddress() + ":" + nextServerInfo.getPort());
 
         System.out.println("healthCheckUrl: " + nextServerInfo.getHealthCheckUrl());
         System.out.println("override: " + nextServerInfo.getOverriddenStatus());
@@ -89,10 +88,10 @@ public class ExampleEurekaClient {
             s.connect(new InetSocketAddress(nextServerInfo.getHostName(), serverPort));
         } catch (IOException e) {
             System.err.println("Could not connect to the server :"
-                    + nextServerInfo.getHostName() + " at port " + serverPort);
+                               + nextServerInfo.getHostName() + " at port " + serverPort);
         } catch (Exception e) {
             System.err.println("Could not connect to the server :"
-                    + nextServerInfo.getHostName() + " at port " + serverPort + "due to Exception " + e);
+                               + nextServerInfo.getHostName() + " at port " + serverPort + "due to Exception " + e);
         }
         try {
             String request = "FOO " + new Date();
@@ -115,6 +114,8 @@ public class ExampleEurekaClient {
     }
 
     public static void main(String[] args) {
+        injectEurekaConfiguration();
+
         ExampleEurekaClient sampleClient = new ExampleEurekaClient();
 
         // create the client
@@ -127,6 +128,21 @@ public class ExampleEurekaClient {
 
         // shutdown the client
         eurekaClient.shutdown();
+    }
+
+    /**
+     * This will be read by server internal discovery client. We need to salience it.
+     */
+    private static void injectEurekaConfiguration() {
+
+        String myServiceUrl = "http://localhost:8080/v2/";
+
+        System.setProperty("eureka.region", "default");
+        System.setProperty("eureka.name", "eureka");
+        System.setProperty("eureka.vipAddress", "eureka.mydomain.net");
+        System.setProperty("eureka.shouldFetchRegistry", "true");
+        System.setProperty("eureka.serviceUrl.defaultZone", myServiceUrl);
+        System.setProperty("eureka.serviceUrl.default.defaultZone", myServiceUrl);
     }
 
 }
