@@ -24,213 +24,216 @@ import com.netflix.discovery.shared.transport.EurekaHttpClient;
 import com.netflix.discovery.shared.transport.EurekaHttpResponse;
 
 /**
+ * EurekaHttp请求装饰器
+ *
  * @author Tomasz Bak
  */
 public abstract class EurekaHttpClientDecorator implements EurekaHttpClient {
 
-    public enum RequestType {
-        Register,
-        Cancel,
-        SendHeartBeat,
-        StatusUpdate,
-        DeleteStatusOverride,
-        GetApplications,
-        GetDelta,
-        GetVip,
-        GetSecureVip,
-        GetApplication,
-        GetInstance,
-        GetApplicationInstance
-    }
+	public enum RequestType {
+		Register,
+		Cancel,
+		SendHeartBeat,
+		StatusUpdate,
+		DeleteStatusOverride,
+		GetApplications,
+		GetDelta,
+		GetVip,
+		GetSecureVip,
+		GetApplication,
+		GetInstance,
+		GetApplicationInstance
+	}
 
-    public interface RequestExecutor<R> {
-        EurekaHttpResponse<R> execute(EurekaHttpClient delegate);
+	public interface RequestExecutor<R> {
+		EurekaHttpResponse<R> execute(EurekaHttpClient delegate);
 
-        RequestType getRequestType();
-    }
+		RequestType getRequestType();
+	}
 
-    protected abstract <R> EurekaHttpResponse<R> execute(RequestExecutor<R> requestExecutor);
+	protected abstract <R> EurekaHttpResponse<R> execute(RequestExecutor<R> requestExecutor);
 
-    @Override
-    public EurekaHttpResponse<Void> register(final InstanceInfo info) {
-        return execute(new RequestExecutor<Void>() {
-            @Override
-            public EurekaHttpResponse<Void> execute(EurekaHttpClient delegate) {
-                return delegate.register(info);
-            }
+	@Override
+	public EurekaHttpResponse<Void> register(final InstanceInfo info) {
+		// 注意这里是一条责任链
+		return execute(new RequestExecutor<Void>() {
+			@Override
+			public EurekaHttpResponse<Void> execute(EurekaHttpClient delegate) {
+				return delegate.register(info);
+			}
 
-            @Override
-            public RequestType getRequestType() {
-                return RequestType.Register;
-            }
-        });
-    }
+			@Override
+			public RequestType getRequestType() {
+				return RequestType.Register;
+			}
+		});
+	}
 
-    @Override
-    public EurekaHttpResponse<Void> cancel(final String appName, final String id) {
-        return execute(new RequestExecutor<Void>() {
-            @Override
-            public EurekaHttpResponse<Void> execute(EurekaHttpClient delegate) {
-                return delegate.cancel(appName, id);
-            }
+	@Override
+	public EurekaHttpResponse<Void> cancel(final String appName, final String id) {
+		return execute(new RequestExecutor<Void>() {
+			@Override
+			public EurekaHttpResponse<Void> execute(EurekaHttpClient delegate) {
+				return delegate.cancel(appName, id);
+			}
 
-            @Override
-            public RequestType getRequestType() {
-                return RequestType.Cancel;
-            }
-        });
-    }
+			@Override
+			public RequestType getRequestType() {
+				return RequestType.Cancel;
+			}
+		});
+	}
 
-    @Override
-    public EurekaHttpResponse<InstanceInfo> sendHeartBeat(final String appName,
-                                                          final String id,
-                                                          final InstanceInfo info,
-                                                          final InstanceStatus overriddenStatus) {
-        return execute(new RequestExecutor<InstanceInfo>() {
-            @Override
-            public EurekaHttpResponse<InstanceInfo> execute(EurekaHttpClient delegate) {
-                return delegate.sendHeartBeat(appName, id, info, overriddenStatus);
-            }
+	@Override
+	public EurekaHttpResponse<InstanceInfo> sendHeartBeat(final String appName,
+	                                                      final String id,
+	                                                      final InstanceInfo info,
+	                                                      final InstanceStatus overriddenStatus) {
+		return execute(new RequestExecutor<InstanceInfo>() {
+			@Override
+			public EurekaHttpResponse<InstanceInfo> execute(EurekaHttpClient delegate) {
+				return delegate.sendHeartBeat(appName, id, info, overriddenStatus);
+			}
 
-            @Override
-            public RequestType getRequestType() {
-                return RequestType.SendHeartBeat;
-            }
-        });
-    }
+			@Override
+			public RequestType getRequestType() {
+				return RequestType.SendHeartBeat;
+			}
+		});
+	}
 
-    @Override
-    public EurekaHttpResponse<Void> statusUpdate(final String appName, final String id, final InstanceStatus newStatus, final InstanceInfo info) {
-        return execute(new RequestExecutor<Void>() {
-            @Override
-            public EurekaHttpResponse<Void> execute(EurekaHttpClient delegate) {
-                return delegate.statusUpdate(appName, id, newStatus, info);
-            }
+	@Override
+	public EurekaHttpResponse<Void> statusUpdate(final String appName, final String id, final InstanceStatus newStatus, final InstanceInfo info) {
+		return execute(new RequestExecutor<Void>() {
+			@Override
+			public EurekaHttpResponse<Void> execute(EurekaHttpClient delegate) {
+				return delegate.statusUpdate(appName, id, newStatus, info);
+			}
 
-            @Override
-            public RequestType getRequestType() {
-                return RequestType.StatusUpdate;
-            }
-        });
-    }
+			@Override
+			public RequestType getRequestType() {
+				return RequestType.StatusUpdate;
+			}
+		});
+	}
 
-    @Override
-    public EurekaHttpResponse<Void> deleteStatusOverride(final String appName, final String id, final InstanceInfo info) {
-        return execute(new RequestExecutor<Void>() {
-            @Override
-            public EurekaHttpResponse<Void> execute(EurekaHttpClient delegate) {
-                return delegate.deleteStatusOverride(appName, id, info);
-            }
+	@Override
+	public EurekaHttpResponse<Void> deleteStatusOverride(final String appName, final String id, final InstanceInfo info) {
+		return execute(new RequestExecutor<Void>() {
+			@Override
+			public EurekaHttpResponse<Void> execute(EurekaHttpClient delegate) {
+				return delegate.deleteStatusOverride(appName, id, info);
+			}
 
-            @Override
-            public RequestType getRequestType() {
-                return RequestType.DeleteStatusOverride;
-            }
-        });
-    }
+			@Override
+			public RequestType getRequestType() {
+				return RequestType.DeleteStatusOverride;
+			}
+		});
+	}
 
-    @Override
-    public EurekaHttpResponse<Applications> getApplications(final String... regions) {
-        return execute(new RequestExecutor<Applications>() {
-            @Override
-            public EurekaHttpResponse<Applications> execute(EurekaHttpClient delegate) {
-                return delegate.getApplications(regions);
-            }
+	@Override
+	public EurekaHttpResponse<Applications> getApplications(final String... regions) {
+		return execute(new RequestExecutor<Applications>() {
+			@Override
+			public EurekaHttpResponse<Applications> execute(EurekaHttpClient delegate) {
+				return delegate.getApplications(regions);
+			}
 
-            @Override
-            public RequestType getRequestType() {
-                return RequestType.GetApplications;
-            }
-        });
-    }
+			@Override
+			public RequestType getRequestType() {
+				return RequestType.GetApplications;
+			}
+		});
+	}
 
-    @Override
-    public EurekaHttpResponse<Applications> getDelta(final String... regions) {
-        return execute(new RequestExecutor<Applications>() {
-            @Override
-            public EurekaHttpResponse<Applications> execute(EurekaHttpClient delegate) {
-                return delegate.getDelta(regions);
-            }
+	@Override
+	public EurekaHttpResponse<Applications> getDelta(final String... regions) {
+		return execute(new RequestExecutor<Applications>() {
+			@Override
+			public EurekaHttpResponse<Applications> execute(EurekaHttpClient delegate) {
+				return delegate.getDelta(regions);
+			}
 
-            @Override
-            public RequestType getRequestType() {
-                return RequestType.GetDelta;
-            }
-        });
-    }
+			@Override
+			public RequestType getRequestType() {
+				return RequestType.GetDelta;
+			}
+		});
+	}
 
-    @Override
-    public EurekaHttpResponse<Applications> getVip(final String vipAddress, final String... regions) {
-        return execute(new RequestExecutor<Applications>() {
-            @Override
-            public EurekaHttpResponse<Applications> execute(EurekaHttpClient delegate) {
-                return delegate.getVip(vipAddress, regions);
-            }
+	@Override
+	public EurekaHttpResponse<Applications> getVip(final String vipAddress, final String... regions) {
+		return execute(new RequestExecutor<Applications>() {
+			@Override
+			public EurekaHttpResponse<Applications> execute(EurekaHttpClient delegate) {
+				return delegate.getVip(vipAddress, regions);
+			}
 
-            @Override
-            public RequestType getRequestType() {
-                return RequestType.GetVip;
-            }
-        });
-    }
+			@Override
+			public RequestType getRequestType() {
+				return RequestType.GetVip;
+			}
+		});
+	}
 
-    @Override
-    public EurekaHttpResponse<Applications> getSecureVip(final String secureVipAddress, final String... regions) {
-        return execute(new RequestExecutor<Applications>() {
-            @Override
-            public EurekaHttpResponse<Applications> execute(EurekaHttpClient delegate) {
-                return delegate.getVip(secureVipAddress, regions);
-            }
+	@Override
+	public EurekaHttpResponse<Applications> getSecureVip(final String secureVipAddress, final String... regions) {
+		return execute(new RequestExecutor<Applications>() {
+			@Override
+			public EurekaHttpResponse<Applications> execute(EurekaHttpClient delegate) {
+				return delegate.getVip(secureVipAddress, regions);
+			}
 
-            @Override
-            public RequestType getRequestType() {
-                return RequestType.GetSecureVip;
-            }
-        });
-    }
+			@Override
+			public RequestType getRequestType() {
+				return RequestType.GetSecureVip;
+			}
+		});
+	}
 
-    @Override
-    public EurekaHttpResponse<Application> getApplication(final String appName) {
-        return execute(new RequestExecutor<Application>() {
-            @Override
-            public EurekaHttpResponse<Application> execute(EurekaHttpClient delegate) {
-                return delegate.getApplication(appName);
-            }
+	@Override
+	public EurekaHttpResponse<Application> getApplication(final String appName) {
+		return execute(new RequestExecutor<Application>() {
+			@Override
+			public EurekaHttpResponse<Application> execute(EurekaHttpClient delegate) {
+				return delegate.getApplication(appName);
+			}
 
-            @Override
-            public RequestType getRequestType() {
-                return RequestType.GetApplication;
-            }
-        });
-    }
+			@Override
+			public RequestType getRequestType() {
+				return RequestType.GetApplication;
+			}
+		});
+	}
 
-    @Override
-    public EurekaHttpResponse<InstanceInfo> getInstance(final String id) {
-        return execute(new RequestExecutor<InstanceInfo>() {
-            @Override
-            public EurekaHttpResponse<InstanceInfo> execute(EurekaHttpClient delegate) {
-                return delegate.getInstance(id);
-            }
+	@Override
+	public EurekaHttpResponse<InstanceInfo> getInstance(final String id) {
+		return execute(new RequestExecutor<InstanceInfo>() {
+			@Override
+			public EurekaHttpResponse<InstanceInfo> execute(EurekaHttpClient delegate) {
+				return delegate.getInstance(id);
+			}
 
-            @Override
-            public RequestType getRequestType() {
-                return RequestType.GetInstance;
-            }
-        });
-    }
+			@Override
+			public RequestType getRequestType() {
+				return RequestType.GetInstance;
+			}
+		});
+	}
 
-    @Override
-    public EurekaHttpResponse<InstanceInfo> getInstance(final String appName, final String id) {
-        return execute(new RequestExecutor<InstanceInfo>() {
-            @Override
-            public EurekaHttpResponse<InstanceInfo> execute(EurekaHttpClient delegate) {
-                return delegate.getInstance(appName, id);
-            }
+	@Override
+	public EurekaHttpResponse<InstanceInfo> getInstance(final String appName, final String id) {
+		return execute(new RequestExecutor<InstanceInfo>() {
+			@Override
+			public EurekaHttpResponse<InstanceInfo> execute(EurekaHttpClient delegate) {
+				return delegate.getInstance(appName, id);
+			}
 
-            @Override
-            public RequestType getRequestType() {
-                return RequestType.GetApplicationInstance;
-            }
-        });
-    }
+			@Override
+			public RequestType getRequestType() {
+				return RequestType.GetApplicationInstance;
+			}
+		});
+	}
 }

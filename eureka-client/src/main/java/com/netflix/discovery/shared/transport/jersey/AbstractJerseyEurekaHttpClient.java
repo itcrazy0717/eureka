@@ -50,6 +50,7 @@ public abstract class AbstractJerseyEurekaHttpClient implements EurekaHttpClient
         try {
             Builder resourceBuilder = jerseyClient.resource(serviceUrl).path(urlPath).getRequestBuilder();
             addExtraHeaders(resourceBuilder);
+            // 发送post请求进行注册
             response = resourceBuilder
                     .header("Accept-Encoding", "gzip")
                     .type(MediaType.APPLICATION_JSON_TYPE)

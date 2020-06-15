@@ -90,7 +90,7 @@ public class EurekaClientServerRestIntegrationTest {
 				serverCodecs,
 				eurekaServiceUrl
 		                                                                         );
-		// 模拟让注册中存活时间长点
+		// 模拟让注册中心存活时间长些
 		Thread.sleep(Long.MAX_VALUE);
 	}
 
@@ -219,6 +219,9 @@ public class EurekaClientServerRestIntegrationTest {
 		System.setProperty("eureka.vipAddress", "eureka.mydomain.net");
 		System.setProperty("eureka.port", "8080");
 		System.setProperty("eureka.preferSameZone", "false");
+		System.setProperty("eureka.shouldFetchRegistry", "false");
+		System.setProperty("eureka.registration.enabled", "false");
+		System.setProperty("eureka.instance.hostname", "http://localhost");
 		System.setProperty("eureka.shouldUseDns", "false");
 		System.setProperty("eureka.shouldFetchRegistry", "false");
 		System.setProperty("eureka.serviceUrl.defaultZone", myServiceUrl);

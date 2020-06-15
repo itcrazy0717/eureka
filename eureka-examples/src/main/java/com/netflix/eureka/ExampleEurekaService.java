@@ -16,7 +16,6 @@
 
 package com.netflix.eureka;
 
-import java.net.InetAddress;
 import java.net.UnknownHostException;
 
 import com.netflix.appinfo.ApplicationInfoManager;

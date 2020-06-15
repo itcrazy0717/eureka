@@ -449,6 +449,7 @@ public interface EurekaClientConfig {
     int getEurekaConnectionIdleTimeoutSeconds();
 
     /**
+     * 标明客户端是否应该从server拉取注册信息
      * Indicates whether this client should fetch eureka registry information from eureka server.
      *
      * @return {@code true} if registry information has to be fetched, {@code false} otherwise.
