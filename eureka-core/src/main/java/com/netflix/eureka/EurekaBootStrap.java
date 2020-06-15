@@ -19,6 +19,7 @@ package com.netflix.eureka;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
+
 import java.util.Date;
 
 import com.netflix.appinfo.ApplicationInfoManager;
@@ -46,6 +47,7 @@ import com.netflix.eureka.resources.DefaultServerCodecs;
 import com.netflix.eureka.resources.ServerCodecs;
 import com.netflix.eureka.util.EurekaMonitors;
 import com.thoughtworks.xstream.XStream;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -62,227 +64,243 @@ import org.slf4j.LoggerFactory;
  * </p>
  *
  * @author Karthik Ranganathan, Greg Kim, David Liu
- *
  */
 // 实现了ServletContextListener因此在容器(Tomcat、Jetty)启动时，会调用contextInitialized方法
 public class EurekaBootStrap implements ServletContextListener {
-    private static final Logger logger = LoggerFactory.getLogger(EurekaBootStrap.class);
+	private static final Logger logger = LoggerFactory.getLogger(EurekaBootStrap.class);
 
-    private static final String TEST = "test";
+	private static final String TEST = "test";
 
-    private static final String ARCHAIUS_DEPLOYMENT_ENVIRONMENT = "archaius.deployment.environment";
+	private static final String ARCHAIUS_DEPLOYMENT_ENVIRONMENT = "archaius.deployment.environment";
 
-    private static final String EUREKA_ENVIRONMENT = "eureka.environment";
+	private static final String EUREKA_ENVIRONMENT = "eureka.environment";
 
-    private static final String CLOUD = "cloud";
-    private static final String DEFAULT = "default";
+	/**
+	 * 部署数据中心 - CLOUD
+	 */
+	private static final String CLOUD = "cloud";
 
-    private static final String ARCHAIUS_DEPLOYMENT_DATACENTER = "archaius.deployment.datacenter";
+	/**
+	 * 部署数据中心 - 默认
+	 */
+	private static final String DEFAULT = "default";
 
-    private static final String EUREKA_DATACENTER = "eureka.datacenter";
+	private static final String ARCHAIUS_DEPLOYMENT_DATACENTER = "archaius.deployment.datacenter";
 
-    protected volatile EurekaServerContext serverContext;
-    protected volatile AwsBinder awsBinder;
-    
-    private EurekaClient eurekaClient;
+	private static final String EUREKA_DATACENTER = "eureka.datacenter";
 
-    /**
-     * Construct a default instance of Eureka boostrap
-     */
-    public EurekaBootStrap() {
-        this(null);
-    }
-    
-    /**
-     * Construct an instance of eureka bootstrap with the supplied eureka client
-     * 
-     * @param eurekaClient the eureka client to bootstrap
-     */
-    public EurekaBootStrap(EurekaClient eurekaClient) {
-        this.eurekaClient = eurekaClient;
-    }
+	protected volatile EurekaServerContext serverContext;
+	protected volatile AwsBinder awsBinder;
 
-    /**
-     * Initializes Eureka, including syncing up with other Eureka peers and publishing the registry.
-     *
-     * @see
-     * javax.servlet.ServletContextListener#contextInitialized(javax.servlet.ServletContextEvent)
-     */
-    @Override
-    public void contextInitialized(ServletContextEvent event) {
-        try {
-            // 初始化服务环境配置
-            initEurekaEnvironment();
-            // 初始化服务上下文
-            initEurekaServerContext();
+	private EurekaClient eurekaClient;
 
-            ServletContext sc = event.getServletContext();
-            sc.setAttribute(EurekaServerContext.class.getName(), serverContext);
-        } catch (Throwable e) {
-            logger.error("Cannot bootstrap eureka server :", e);
-            throw new RuntimeException("Cannot bootstrap eureka server :", e);
-        }
-    }
+	/**
+	 * Construct a default instance of Eureka boostrap
+	 */
+	public EurekaBootStrap() {
+		this(null);
+	}
 
-    /**
-     * Users can override to initialize the environment themselves.
-     */
-    protected void initEurekaEnvironment() throws Exception {
-        logger.info("Setting the eureka configuration..");
-        // 设置配置文件的数据中心
-        String dataCenter = ConfigurationManager.getConfigInstance().getString(EUREKA_DATACENTER);
-        if (dataCenter == null) {
-            logger.info("Eureka data center value eureka.datacenter is not set, defaulting to default");
-            ConfigurationManager.getConfigInstance().setProperty(ARCHAIUS_DEPLOYMENT_DATACENTER, DEFAULT);
-        } else {
-            ConfigurationManager.getConfigInstance().setProperty(ARCHAIUS_DEPLOYMENT_DATACENTER, dataCenter);
-        }
-        String environment = ConfigurationManager.getConfigInstance().getString(EUREKA_ENVIRONMENT);
-        if (environment == null) {
-            ConfigurationManager.getConfigInstance().setProperty(ARCHAIUS_DEPLOYMENT_ENVIRONMENT, TEST);
-            logger.info("Eureka environment value eureka.environment is not set, defaulting to test");
-        }
-    }
+	/**
+	 * Construct an instance of eureka bootstrap with the supplied eureka client
+	 *
+	 * @param eurekaClient the eureka client to bootstrap
+	 */
+	public EurekaBootStrap(EurekaClient eurekaClient) {
+		this.eurekaClient = eurekaClient;
+	}
 
-    /**
-     * init hook for server context. Override for custom logic.
-     */
-    protected void initEurekaServerContext() throws Exception {
-        EurekaServerConfig eurekaServerConfig = new DefaultEurekaServerConfig();
+	/**
+	 * Initializes Eureka, including syncing up with other Eureka peers and publishing the registry.
+	 *
+	 * @see javax.servlet.ServletContextListener#contextInitialized(javax.servlet.ServletContextEvent)
+	 */
+	@Override
+	public void contextInitialized(ServletContextEvent event) {
+		try {
+			// 初始化服务环境配置
+			initEurekaEnvironment();
+			// 初始化服务上下文
+			initEurekaServerContext();
 
-        // For backward compatibility
-        JsonXStream.getInstance().registerConverter(new V1AwareInstanceInfoConverter(), XStream.PRIORITY_VERY_HIGH);
-        XmlXStream.getInstance().registerConverter(new V1AwareInstanceInfoConverter(), XStream.PRIORITY_VERY_HIGH);
+			ServletContext sc = event.getServletContext();
+			sc.setAttribute(EurekaServerContext.class.getName(), serverContext);
+		} catch (Throwable e) {
+			logger.error("Cannot bootstrap eureka server :", e);
+			throw new RuntimeException("Cannot bootstrap eureka server :", e);
+		}
+	}
 
-        logger.info("Initializing the eureka client...");
-        logger.info(eurekaServerConfig.getJsonCodecName());
-        ServerCodecs serverCodecs = new DefaultServerCodecs(eurekaServerConfig);
+	/**
+	 * Users can override to initialize the environment themselves.
+	 */
+	protected void initEurekaEnvironment() throws Exception {
+		logger.info("Setting the eureka configuration..");
+		// 设置配置文件的数据中心
+		String dataCenter = ConfigurationManager.getConfigInstance().getString(EUREKA_DATACENTER);
+		if (dataCenter == null) {
+			logger.info("Eureka data center value eureka.datacenter is not set, defaulting to default");
+			ConfigurationManager.getConfigInstance().setProperty(ARCHAIUS_DEPLOYMENT_DATACENTER, DEFAULT);
+		}
+		else {
+			ConfigurationManager.getConfigInstance().setProperty(ARCHAIUS_DEPLOYMENT_DATACENTER, dataCenter);
+		}
+		// 读取配置文件的环境
+		String environment = ConfigurationManager.getConfigInstance().getString(EUREKA_ENVIRONMENT);
+		if (environment == null) {
+			ConfigurationManager.getConfigInstance().setProperty(ARCHAIUS_DEPLOYMENT_ENVIRONMENT, TEST);
+			logger.info("Eureka environment value eureka.environment is not set, defaulting to test");
+		}
+	}
 
-        ApplicationInfoManager applicationInfoManager = null;
+	/**
+	 * init hook for server context. Override for custom logic.
+	 */
+	protected void initEurekaServerContext() throws Exception {
 
-        if (eurekaClient == null) {
-            EurekaInstanceConfig instanceConfig = isCloud(ConfigurationManager.getDeploymentContext())
-                    ? new CloudInstanceConfig()
-                    : new MyDataCenterInstanceConfig();
-            
-            applicationInfoManager = new ApplicationInfoManager(
-                    instanceConfig, new EurekaConfigBasedInstanceInfoProvider(instanceConfig).get());
-            
-            EurekaClientConfig eurekaClientConfig = new DefaultEurekaClientConfig();
-            eurekaClient = new DiscoveryClient(applicationInfoManager, eurekaClientConfig);
-        } else {
-            applicationInfoManager = eurekaClient.getApplicationInfoManager();
-        }
+		// 创建eureka-server配置
+		EurekaServerConfig eurekaServerConfig = new DefaultEurekaServerConfig();
 
-        PeerAwareInstanceRegistry registry;
-        if (isAws(applicationInfoManager.getInfo())) {
-            registry = new AwsInstanceRegistry(
-                    eurekaServerConfig,
-                    eurekaClient.getEurekaClientConfig(),
-                    serverCodecs,
-                    eurekaClient
-            );
-            awsBinder = new AwsBinderDelegate(eurekaServerConfig, eurekaClient.getEurekaClientConfig(), registry, applicationInfoManager);
-            awsBinder.start();
-        } else {
-            registry = new PeerAwareInstanceRegistryImpl(
-                    eurekaServerConfig,
-                    eurekaClient.getEurekaClientConfig(),
-                    serverCodecs,
-                    eurekaClient
-            );
-        }
+		// For backward compatibility
+		// eureka-server请求和响应的数据兼容
+		JsonXStream.getInstance().registerConverter(new V1AwareInstanceInfoConverter(), XStream.PRIORITY_VERY_HIGH);
+		XmlXStream.getInstance().registerConverter(new V1AwareInstanceInfoConverter(), XStream.PRIORITY_VERY_HIGH);
 
-        PeerEurekaNodes peerEurekaNodes = getPeerEurekaNodes(
-                registry,
-                eurekaServerConfig,
-                eurekaClient.getEurekaClientConfig(),
-                serverCodecs,
-                applicationInfoManager
-        );
+		logger.info("Initializing the eureka client...");
+		logger.info(eurekaServerConfig.getJsonCodecName());
+		// 创建eureka-server请求和响应编解码器
+		ServerCodecs serverCodecs = new DefaultServerCodecs(eurekaServerConfig);
 
-        serverContext = new DefaultEurekaServerContext(
-                eurekaServerConfig,
-                serverCodecs,
-                registry,
-                peerEurekaNodes,
-                applicationInfoManager
-        );
+		ApplicationInfoManager applicationInfoManager = null;
+        // 创建eureka-client
+		if (eurekaClient == null) {
+			EurekaInstanceConfig instanceConfig = isCloud(ConfigurationManager.getDeploymentContext())
+			                                      ? new CloudInstanceConfig()
+			                                      : new MyDataCenterInstanceConfig();
 
-        EurekaServerContextHolder.initialize(serverContext);
+			applicationInfoManager = new ApplicationInfoManager(
+					instanceConfig, new EurekaConfigBasedInstanceInfoProvider(instanceConfig).get());
 
-        serverContext.initialize();
-        logger.info("Initialized server context");
+			EurekaClientConfig eurekaClientConfig = new DefaultEurekaClientConfig();
+			eurekaClient = new DiscoveryClient(applicationInfoManager, eurekaClientConfig);
+		}
+		else {
+			applicationInfoManager = eurekaClient.getApplicationInfoManager();
+		}
+        // 创建应用实例信息的注册表
+		PeerAwareInstanceRegistry registry;
+		if (isAws(applicationInfoManager.getInfo())) {
+			registry = new AwsInstanceRegistry(
+					eurekaServerConfig,
+					eurekaClient.getEurekaClientConfig(),
+					serverCodecs,
+					eurekaClient
+			);
+			awsBinder = new AwsBinderDelegate(eurekaServerConfig, eurekaClient.getEurekaClientConfig(), registry, applicationInfoManager);
+			awsBinder.start();
+		}
+		else {
+			registry = new PeerAwareInstanceRegistryImpl(
+					eurekaServerConfig,
+					eurekaClient.getEurekaClientConfig(),
+					serverCodecs,
+					eurekaClient
+			);
+		}
+        // 创建eureka-server集群节点集合
+		PeerEurekaNodes peerEurekaNodes = getPeerEurekaNodes(
+				registry,
+				eurekaServerConfig,
+				eurekaClient.getEurekaClientConfig(),
+				serverCodecs,
+				applicationInfoManager
+		                                                    );
+        // 创建eureka-server上下文
+		serverContext = new DefaultEurekaServerContext(
+				eurekaServerConfig,
+				serverCodecs,
+				registry,
+				peerEurekaNodes,
+				applicationInfoManager
+		);
+        // 初始化EurekaServerContextHolder
+		EurekaServerContextHolder.initialize(serverContext);
 
-        // Copy registry from neighboring eureka node
-        int registryCount = registry.syncUp();
-        registry.openForTraffic(applicationInfoManager, registryCount);
+		// 初始化eureka-server上下文
+		serverContext.initialize();
+		logger.info("Initialized server context");
 
-        // Register all monitoring statistics.
-        EurekaMonitors.registerAllStats();
-    }
-    
-    protected PeerEurekaNodes getPeerEurekaNodes(PeerAwareInstanceRegistry registry, EurekaServerConfig eurekaServerConfig, EurekaClientConfig eurekaClientConfig, ServerCodecs serverCodecs, ApplicationInfoManager applicationInfoManager) {
-        PeerEurekaNodes peerEurekaNodes = new PeerEurekaNodes(
-                registry,
-                eurekaServerConfig,
-                eurekaClientConfig,
-                serverCodecs,
-                applicationInfoManager
-        );
-        
-        return peerEurekaNodes;
-    }
+		// Copy registry from neighboring eureka node
+		// 从其他server拉取注册信息
+		int registryCount = registry.syncUp();
+		registry.openForTraffic(applicationInfoManager, registryCount);
 
-    /**
-     * Handles Eureka cleanup, including shutting down all monitors and yielding all EIPs.
-     *
-     * @see javax.servlet.ServletContextListener#contextDestroyed(javax.servlet.ServletContextEvent)
-     */
-    @Override
-    public void contextDestroyed(ServletContextEvent event) {
-        try {
-            logger.info("{} Shutting down Eureka Server..", new Date());
-            ServletContext sc = event.getServletContext();
-            sc.removeAttribute(EurekaServerContext.class.getName());
+		// 注册监控
+		// Register all monitoring statistics.
+		EurekaMonitors.registerAllStats();
+	}
 
-            destroyEurekaServerContext();
-            destroyEurekaEnvironment();
+	protected PeerEurekaNodes getPeerEurekaNodes(PeerAwareInstanceRegistry registry, EurekaServerConfig eurekaServerConfig, EurekaClientConfig eurekaClientConfig, ServerCodecs serverCodecs, ApplicationInfoManager applicationInfoManager) {
+		PeerEurekaNodes peerEurekaNodes = new PeerEurekaNodes(
+				registry,
+				eurekaServerConfig,
+				eurekaClientConfig,
+				serverCodecs,
+				applicationInfoManager
+		);
 
-        } catch (Throwable e) {
-            logger.error("Error shutting down eureka", e);
-        }
-        logger.info("{} Eureka Service is now shutdown...", new Date());
-    }
+		return peerEurekaNodes;
+	}
 
-    /**
-     * Server context shutdown hook. Override for custom logic
-     */
-    protected void destroyEurekaServerContext() throws Exception {
-        EurekaMonitors.shutdown();
-        if (awsBinder != null) {
-            awsBinder.shutdown();
-        }
-        if (serverContext != null) {
-            serverContext.shutdown();
-        }
-    }
+	/**
+	 * Handles Eureka cleanup, including shutting down all monitors and yielding all EIPs.
+	 *
+	 * @see javax.servlet.ServletContextListener#contextDestroyed(javax.servlet.ServletContextEvent)
+	 */
+	@Override
+	public void contextDestroyed(ServletContextEvent event) {
+		try {
+			logger.info("{} Shutting down Eureka Server..", new Date());
+			ServletContext sc = event.getServletContext();
+			sc.removeAttribute(EurekaServerContext.class.getName());
 
-    /**
-     * Users can override to clean up the environment themselves.
-     */
-    protected void destroyEurekaEnvironment() throws Exception {
+			destroyEurekaServerContext();
+			destroyEurekaEnvironment();
 
-    }
+		} catch (Throwable e) {
+			logger.error("Error shutting down eureka", e);
+		}
+		logger.info("{} Eureka Service is now shutdown...", new Date());
+	}
 
-    protected boolean isAws(InstanceInfo selfInstanceInfo) {
-        boolean result = DataCenterInfo.Name.Amazon == selfInstanceInfo.getDataCenterInfo().getName();
-        logger.info("isAws returned {}", result);
-        return result;
-    }
+	/**
+	 * Server context shutdown hook. Override for custom logic
+	 */
+	protected void destroyEurekaServerContext() throws Exception {
+		EurekaMonitors.shutdown();
+		if (awsBinder != null) {
+			awsBinder.shutdown();
+		}
+		if (serverContext != null) {
+			serverContext.shutdown();
+		}
+	}
 
-    protected boolean isCloud(DeploymentContext deploymentContext) {
-        logger.info("Deployment datacenter is {}", deploymentContext.getDeploymentDatacenter());
-        return CLOUD.equals(deploymentContext.getDeploymentDatacenter());
-    }
+	/**
+	 * Users can override to clean up the environment themselves.
+	 */
+	protected void destroyEurekaEnvironment() throws Exception {
+
+	}
+
+	protected boolean isAws(InstanceInfo selfInstanceInfo) {
+		boolean result = DataCenterInfo.Name.Amazon == selfInstanceInfo.getDataCenterInfo().getName();
+		logger.info("isAws returned {}", result);
+		return result;
+	}
+
+	protected boolean isCloud(DeploymentContext deploymentContext) {
+		logger.info("Deployment datacenter is {}", deploymentContext.getDeploymentDatacenter());
+		return CLOUD.equals(deploymentContext.getDeploymentDatacenter());
+	}
 }

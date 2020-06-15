@@ -60,6 +60,7 @@ import com.thoughtworks.xstream.annotations.XStreamImplicit;
  * @author Karthik Ranganathan
  *
  */
+// 包装所有注册信息
 @Serializer("com.netflix.discovery.converters.EntityBodyConverter")
 @XStreamAlias("applications")
 @JsonRootName("applications")
@@ -80,10 +81,22 @@ public class Applications {
 
     private static final String STATUS_DELIMITER = "_";
 
+    /**
+     * 一致性哈希码
+     */
     private String appsHashCode;
     private Long versionDelta;
+
+    /**
+     * 应用队列
+     */
     @XStreamImplicit
     private final AbstractQueue<Application> applications;
+
+    /**
+     * 应用映射
+     * key：应用名
+     */
     private final Map<String, Application> appNameApplicationMap;
     private final Map<String, VipIndexSupport> virtualHostNameAppMap;
     private final Map<String, VipIndexSupport> secureVirtualHostNameAppMap;
