@@ -26,16 +26,34 @@ import java.util.concurrent.atomic.AtomicReference;
  *
  * @author dliu
  */
+// 应用实例信息复制器
 class InstanceInfoReplicator implements Runnable {
 	private static final Logger logger = LoggerFactory.getLogger(InstanceInfoReplicator.class);
 
 	private final DiscoveryClient discoveryClient;
+	/**
+	 * 应用实例信息
+	 */
 	private final InstanceInfo instanceInfo;
 
+	/**
+	 * 定时执行频率，单位：秒
+	 */
 	private final int replicationIntervalSeconds;
+
+	/**
+	 * 定时执行器
+	 */
 	private final ScheduledExecutorService scheduler;
+
+	/**
+	 * 定时执行任务的 Future
+	 */
 	private final AtomicReference<Future> scheduledPeriodicRef;
 
+	/**
+	 * 是否开启调度
+	 */
 	private final AtomicBoolean started;
 	private final RateLimiter rateLimiter;
 	private final int burstSize;
@@ -63,7 +81,9 @@ class InstanceInfoReplicator implements Runnable {
 
 	public void start(int initialDelayMs) {
 		if (started.compareAndSet(false, true)) {
+			// 设置应用实例信息数据不一致
 			instanceInfo.setIsDirty();  // for initial register
+			// 提交任务，并设置任务的future
 			Future next = scheduler.schedule(this, initialDelayMs, TimeUnit.SECONDS);
 			scheduledPeriodicRef.set(next);
 		}
@@ -115,11 +135,13 @@ class InstanceInfoReplicator implements Runnable {
 		}
 	}
 
+	@Override
 	public void run() {
 		try {
 			// 刷新Instance信息
 			discoveryClient.refreshInstanceInfo();
 
+			// 判断应用实例信息是否数据不一致
 			Long dirtyTimestamp = instanceInfo.isDirtyWithTime();
 			if (dirtyTimestamp != null) {
 				// 注册信息到服务器
