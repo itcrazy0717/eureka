@@ -324,25 +324,34 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
 	 */
 	protected boolean internalCancel(String appName, String id, boolean isReplication) {
 		try {
+			// 获得读锁
 			read.lock();
+			// 增加取消注册次数
 			CANCEL.increment(isReplication);
+			// 从注册表中取得对应实例信息
 			Map<String, Lease<InstanceInfo>> gMap = registry.get(appName);
 			Lease<InstanceInfo> leaseToCancel = null;
+			// 从注册表中移除租约
 			if (gMap != null) {
 				leaseToCancel = gMap.remove(id);
 			}
+			// 添加到取消队列中
 			recentCanceledQueue.add(new Pair<Long, String>(System.currentTimeMillis(), appName + "(" + id + ")"));
+			// 移除应用实例的状态映射
 			InstanceStatus instanceStatus = overriddenInstanceStatusMap.remove(id);
 			if (instanceStatus != null) {
 				logger.debug("Removed instance id {} from the overridden map which has value {}", id, instanceStatus.name());
 			}
+			// 租约不存在
 			if (leaseToCancel == null) {
 				CANCEL_NOT_FOUND.increment(isReplication);
 				logger.warn("DS: Registry: cancel failed because Lease is not registered for: {}/{}", appName, id);
 				return false;
 			}
 			else {
+				// 租约取消的时间戳
 				leaseToCancel.cancel();
+				// 添加到最近租约变更记录队列
 				InstanceInfo instanceInfo = leaseToCancel.getHolder();
 				String vip = null;
 				String svip = null;
@@ -377,13 +386,18 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
 	 *
 	 * @see com.netflix.eureka.lease.LeaseManager#renew(java.lang.String, java.lang.String, boolean)
 	 */
+	@Override
 	public boolean renew(String appName, String id, boolean isReplication) {
+		// 增加 租约次数到监控
 		RENEW.increment(isReplication);
+		// 从服务器注册表中获取租约
 		Map<String, Lease<InstanceInfo>> gMap = registry.get(appName);
 		Lease<InstanceInfo> leaseToRenew = null;
+		// 如果租约存在
 		if (gMap != null) {
 			leaseToRenew = gMap.get(id);
 		}
+		// 如果租约不存在，则直接返回
 		if (leaseToRenew == null) {
 			RENEW_NOT_FOUND.increment(isReplication);
 			logger.warn("DS: Registry: lease doesn't exist, registering resource: {} - {}", appName, id);
@@ -393,14 +407,17 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
 			InstanceInfo instanceInfo = leaseToRenew.getHolder();
 			if (instanceInfo != null) {
 				// touchASGCache(instanceInfo.getASGName());
+				// 获得应用实例状态
 				InstanceStatus overriddenInstanceStatus = this.getOverriddenInstanceStatus(
 						instanceInfo, leaseToRenew, isReplication);
+				// 如果状态未知，则无法续约
 				if (overriddenInstanceStatus == InstanceStatus.UNKNOWN) {
 					logger.info("Instance status UNKNOWN possibly due to deleted override for instance {}"
 					            + "; re-register required", instanceInfo.getId());
 					RENEW_NOT_FOUND.increment(isReplication);
 					return false;
 				}
+				// 设置应用实例状态
 				if (!instanceInfo.getStatus().equals(overriddenInstanceStatus)) {
 					logger.info(
 							"The instance status {} is different from overridden instance status {} for instance {}. "
@@ -411,7 +428,9 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
 
 				}
 			}
+			// 增加续约次数
 			renewsLastMin.increment();
+			// 设置租约最后更新时间
 			leaseToRenew.renew();
 			return true;
 		}

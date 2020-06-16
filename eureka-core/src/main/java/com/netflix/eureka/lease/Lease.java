@@ -85,7 +85,6 @@ public class Lease<T> {
      */
     public void renew() {
         lastUpdateTimestamp = System.currentTimeMillis() + duration;
-
     }
 
     /**

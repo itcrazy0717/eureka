@@ -13,100 +13,137 @@ import com.netflix.servo.monitor.Counter;
 import com.netflix.servo.monitor.LongGauge;
 import com.netflix.servo.monitor.MonitorConfig;
 import com.netflix.servo.monitor.Monitors;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
+ * 监管定时任务的任务
  * A supervisor task that schedules subtasks while enforce a timeout.
  * Wrapped subtasks must be thread safe.
  *
  * @author David Qiang Liu
  */
 public class TimedSupervisorTask extends TimerTask {
-    private static final Logger logger = LoggerFactory.getLogger(TimedSupervisorTask.class);
+	private static final Logger logger = LoggerFactory.getLogger(TimedSupervisorTask.class);
 
-    private final Counter successCounter;
-    private final Counter timeoutCounter;
-    private final Counter rejectedCounter;
-    private final Counter throwableCounter;
-    private final LongGauge threadPoolLevelGauge;
+	private final Counter successCounter;
+	private final Counter timeoutCounter;
+	private final Counter rejectedCounter;
+	private final Counter throwableCounter;
+	private final LongGauge threadPoolLevelGauge;
 
-    private final String name;
-    private final ScheduledExecutorService scheduler;
-    private final ThreadPoolExecutor executor;
-    private final long timeoutMillis;
-    private final Runnable task;
+	private final String name;
 
-    private final AtomicLong delay;
-    private final long maxDelay;
+	/**
+	 * 定时任务服务
+	 */
+	private final ScheduledExecutorService scheduler;
 
-    public TimedSupervisorTask(String name, ScheduledExecutorService scheduler, ThreadPoolExecutor executor,
-                               int timeout, TimeUnit timeUnit, int expBackOffBound, Runnable task) {
-        this.name = name;
-        this.scheduler = scheduler;
-        this.executor = executor;
-        this.timeoutMillis = timeUnit.toMillis(timeout);
-        this.task = task;
-        this.delay = new AtomicLong(timeoutMillis);
-        this.maxDelay = timeoutMillis * expBackOffBound;
+	/**
+	 * 执行子任务线程池
+	 */
+	private final ThreadPoolExecutor executor;
 
-        // Initialize the counters and register.
-        successCounter = Monitors.newCounter("success");
-        timeoutCounter = Monitors.newCounter("timeouts");
-        rejectedCounter = Monitors.newCounter("rejectedExecutions");
-        throwableCounter = Monitors.newCounter("throwables");
-        threadPoolLevelGauge = new LongGauge(MonitorConfig.builder("threadPoolUsed").build());
-        Monitors.registerObject(name, this);
-    }
+	/**
+	 * 执行子任务线程池
+	 */
+	private final long timeoutMillis;
 
-    @Override
-    public void run() {
-        Future<?> future = null;
-        try {
-            future = executor.submit(task);
-            threadPoolLevelGauge.set((long) executor.getActiveCount());
-            future.get(timeoutMillis, TimeUnit.MILLISECONDS);  // block until done or timeout
-            delay.set(timeoutMillis);
-            threadPoolLevelGauge.set((long) executor.getActiveCount());
-            successCounter.increment();
-        } catch (TimeoutException e) {
-            logger.warn("task supervisor timed out", e);
-            timeoutCounter.increment();
+	/**
+	 * 子任务
+	 */
+	private final Runnable task;
 
-            long currentDelay = delay.get();
-            long newDelay = Math.min(maxDelay, currentDelay * 2);
-            delay.compareAndSet(currentDelay, newDelay);
+	/**
+	 * 当前任务执行频率
+	 */
+	private final AtomicLong delay;
 
-        } catch (RejectedExecutionException e) {
-            if (executor.isShutdown() || scheduler.isShutdown()) {
-                logger.warn("task supervisor shutting down, reject the task", e);
-            } else {
-                logger.warn("task supervisor rejected the task", e);
-            }
+	/**
+	 * 最大任务执行频率
+	 * 子任务执行超时情况下使用
+	 */
+	private final long maxDelay;
 
-            rejectedCounter.increment();
-        } catch (Throwable e) {
-            if (executor.isShutdown() || scheduler.isShutdown()) {
-                logger.warn("task supervisor shutting down, can't accept the task");
-            } else {
-                logger.warn("task supervisor threw an exception", e);
-            }
+	public TimedSupervisorTask(String name, ScheduledExecutorService scheduler, ThreadPoolExecutor executor,
+	                           int timeout, TimeUnit timeUnit, int expBackOffBound, Runnable task) {
+		this.name = name;
+		this.scheduler = scheduler;
+		this.executor = executor;
+		this.timeoutMillis = timeUnit.toMillis(timeout);
+		this.task = task;
+		this.delay = new AtomicLong(timeoutMillis);
+		this.maxDelay = timeoutMillis * expBackOffBound;
 
-            throwableCounter.increment();
-        } finally {
-            if (future != null) {
-                future.cancel(true);
-            }
+		// Initialize the counters and register.
+		successCounter = Monitors.newCounter("success");
+		timeoutCounter = Monitors.newCounter("timeouts");
+		rejectedCounter = Monitors.newCounter("rejectedExecutions");
+		throwableCounter = Monitors.newCounter("throwables");
+		threadPoolLevelGauge = new LongGauge(MonitorConfig.builder("threadPoolUsed").build());
+		Monitors.registerObject(name, this);
+	}
 
-            if (!scheduler.isShutdown()) {
-                scheduler.schedule(this, delay.get(), TimeUnit.MILLISECONDS);
-            }
-        }
-    }
+	@Override
+	public void run() {
+		Future<?> future = null;
+		try {
+			// 提交任务
+			future = executor.submit(task);
+			threadPoolLevelGauge.set((long) executor.getActiveCount());
+			// 等待任务执行完成或超时
+			future.get(timeoutMillis, TimeUnit.MILLISECONDS);  // block until done or timeout
+			// 设置下一次任务执行频率
+			delay.set(timeoutMillis);
+			threadPoolLevelGauge.set((long) executor.getActiveCount());
+			// 成功次数增加
+			successCounter.increment();
+		} catch (TimeoutException e) {
+			logger.warn("task supervisor timed out", e);
+			// 超时异常
+			// 超时次数增加
+			timeoutCounter.increment();
+			// 重新计算任务执行频率 也就是超时时间不断乘以2，但是不允许超过最大时间
+			long currentDelay = delay.get();
+			long newDelay = Math.min(maxDelay, currentDelay * 2);
+			delay.compareAndSet(currentDelay, newDelay);
 
-    @Override
-    public boolean cancel() {
-        Monitors.unregisterObject(name, this);
-        return super.cancel();
-    }
+		} catch (RejectedExecutionException e) {
+			if (executor.isShutdown() || scheduler.isShutdown()) {
+				logger.warn("task supervisor shutting down, reject the task", e);
+			}
+			else {
+				logger.warn("task supervisor rejected the task", e);
+			}
+            // 拒绝异常
+			// 拒绝次数增加
+			rejectedCounter.increment();
+		} catch (Throwable e) {
+			if (executor.isShutdown() || scheduler.isShutdown()) {
+				logger.warn("task supervisor shutting down, can't accept the task");
+			}
+			else {
+				logger.warn("task supervisor threw an exception", e);
+			}
+
+			throwableCounter.increment();
+		} finally {
+			// 如果任务未完成，则取消
+			if (future != null) {
+				future.cancel(true);
+			}
+
+			// 如果任务池未关闭，则调度下次任务
+			if (!scheduler.isShutdown()) {
+				scheduler.schedule(this, delay.get(), TimeUnit.MILLISECONDS);
+			}
+		}
+	}
+
+	@Override
+	public boolean cancel() {
+		Monitors.unregisterObject(name, this);
+		return super.cancel();
+	}
 }

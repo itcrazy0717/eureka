@@ -940,14 +940,17 @@ public class InstanceInfo {
      */
     @JsonIgnore
     public String getId() {
+        // 如果配置了instanceId，则使用InstanceId
         if (instanceId != null && !instanceId.isEmpty()) {
             return instanceId;
+        // 如果存在数据中心，则通过数据中心获取id
         } else if (dataCenterInfo instanceof UniqueIdentifier) {
             String uniqueId = ((UniqueIdentifier) dataCenterInfo).getId();
             if (uniqueId != null && !uniqueId.isEmpty()) {
                 return uniqueId;
             }
         }
+        // 最后使用hostName
         return hostName;
     }
 

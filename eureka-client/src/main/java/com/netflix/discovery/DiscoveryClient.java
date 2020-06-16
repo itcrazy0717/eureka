@@ -181,6 +181,10 @@ public class DiscoveryClient implements EurekaClient {
 
 	private volatile int registrySize = 0;
 	private volatile long lastSuccessfulRegistryFetchTimestamp = -1;
+
+	/**
+	 * 最后成功向eureka-sever心跳时间戳
+	 */
 	private volatile long lastSuccessfulHeartbeatTimestamp = -1;
 	private final ThresholdLevelsMetric heartbeatStalenessMonitor;
 	private final ThresholdLevelsMetric registryStalenessMonitor;
@@ -1481,6 +1485,7 @@ public class DiscoveryClient implements EurekaClient {
 	 */
 	private class HeartbeatThread implements Runnable {
 
+		@Override
 		public void run() {
 			// 续约
 			if (renew()) {
