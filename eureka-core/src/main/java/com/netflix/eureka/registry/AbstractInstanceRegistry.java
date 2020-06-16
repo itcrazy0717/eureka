@@ -1276,6 +1276,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
 
 	protected void postInit() {
 		renewsLastMin.start();
+		// 初始化请求过期注册实例任务
 		if (evictionTaskRef.get() != null) {
 			evictionTaskRef.get().cancel();
 		}
@@ -1310,6 +1311,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
 		@Override
 		public void run() {
 			try {
+				// 获取补偿时间毫秒数
 				long compensationTimeMs = getCompensationTimeMs();
 				logger.info("Running the evict task with compensationTime {}ms", compensationTimeMs);
 				evict(compensationTimeMs);

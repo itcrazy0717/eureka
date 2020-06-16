@@ -450,7 +450,7 @@ public class DiscoveryClient implements EurekaClient {
 		} catch (Throwable e) {
 			throw new RuntimeException("Failed to initialize DiscoveryClient!", e);
 		}
-        // 从eureka-sever拉取注册信息
+		// 从eureka-sever拉取注册信息
 		if (clientConfig.shouldFetchRegistry() && !fetchRegistry(false)) {
 			fetchRegistryFromBackup();
 		}
@@ -1106,6 +1106,7 @@ public class DiscoveryClient implements EurekaClient {
 		logger.info("Getting all instance registry info from the eureka server");
 
 		Applications apps = null;
+		// 通过getApplications获取全量注册信息
 		EurekaHttpResponse<Applications> httpResponse = clientConfig.getRegistryRefreshSingleVipAddress() == null
 		                                                ? eurekaTransport.queryClient.getApplications(remoteRegionsRef.get())
 		                                                : eurekaTransport.queryClient.getVip(clientConfig.getRegistryRefreshSingleVipAddress(), remoteRegionsRef.get());
@@ -1390,7 +1391,7 @@ public class DiscoveryClient implements EurekaClient {
 			if (clientConfig.shouldOnDemandUpdateStatusChange()) {
 				applicationInfoManager.registerStatusChangeListener(statusChangeListener);
 			}
-            // 开启应用实例信息复制器
+			// 开启应用实例信息复制器
 			instanceInfoReplicator.start(clientConfig.getInitialInstanceInfoReplicationIntervalSeconds());
 		}
 		else {
@@ -1538,7 +1539,6 @@ public class DiscoveryClient implements EurekaClient {
 	void refreshRegistry() {
 		try {
 			boolean isFetchingRemoteRegionRegistries = isFetchingRemoteRegionRegistries();
-
 			// 远程是否更改
 			boolean remoteRegionsModified = false;
 			// This makes sure that a dynamic change to remote regions to fetch is honored.

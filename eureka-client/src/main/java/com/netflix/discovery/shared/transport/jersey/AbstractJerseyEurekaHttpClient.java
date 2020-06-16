@@ -170,6 +170,7 @@ public abstract class AbstractJerseyEurekaHttpClient implements EurekaHttpClient
 
 	@Override
 	public EurekaHttpResponse<Applications> getApplications(String... regions) {
+		// 获取服务器上全量注册信息
 		return getApplicationsInternal("apps/", regions);
 	}
 
