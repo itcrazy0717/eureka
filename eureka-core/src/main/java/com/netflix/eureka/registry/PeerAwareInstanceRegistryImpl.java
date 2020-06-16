@@ -237,21 +237,25 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
 	public void openForTraffic(ApplicationInfoManager applicationInfoManager, int count) {
 		// Renewals happen every 30 seconds and for a minute it should be a factor of 2.
 		this.expectedNumberOfClientsSendingRenews = count;
+		// 更新租约检查阈值
 		updateRenewsPerMinThreshold();
 		logger.info("Got {} instances from neighboring DS node", count);
 		logger.info("Renew threshold is: {}", numberOfRenewsPerMinThreshold);
+		// 设置启动时间
 		this.startupTime = System.currentTimeMillis();
 		if (count > 0) {
 			this.peerInstancesTransferEmptyOnStartup = false;
 		}
 		DataCenterInfo.Name selfName = applicationInfoManager.getInfo().getDataCenterInfo().getName();
 		boolean isAws = Name.Amazon == selfName;
+		// AWS相关逻辑
 		if (isAws && serverConfig.shouldPrimeAwsReplicaConnections()) {
 			logger.info("Priming AWS connections for all replicas..");
 			primeAwsReplicas(applicationInfoManager);
 		}
 		logger.info("Changing status to UP");
 		applicationInfoManager.setInstanceStatus(InstanceStatus.UP);
+		// 这里会启动服务端任务，对租约进行下线检查
 		super.postInit();
 	}
 

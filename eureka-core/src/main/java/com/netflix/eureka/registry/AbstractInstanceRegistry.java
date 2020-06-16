@@ -109,7 +109,15 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
 	private final AtomicReference<EvictionTask> evictionTaskRef = new AtomicReference<EvictionTask>();
 
 	protected String[] allKnownRemoteRegions = EMPTY_STR_ARRAY;
+
+	/**
+	 * 期望最小每分钟续租次数
+	 */
 	protected volatile int numberOfRenewsPerMinThreshold;
+
+	/**
+	 * 期望每分钟最大续租次数
+	 */
 	protected volatile int expectedNumberOfClientsSendingRenews;
 
 	protected final EurekaServerConfig serverConfig;
@@ -636,6 +644,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
 	public void evict(long additionalLeaseMs) {
 		logger.debug("Running the evict task");
 
+		// 如果开启自我保护模式，则不执行过期租约逻辑
 		if (!isLeaseExpirationEnabled()) {
 			logger.debug("DS: lease expiration is currently disabled.");
 			return;
@@ -645,11 +654,13 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
 		// if we do not that, we might wipe out whole apps before self preservation kicks in. By randomizing it,
 		// the impact should be evenly distributed across all applications.
 		List<Lease<InstanceInfo>> expiredLeases = new ArrayList<>();
+		// 遍历注册表集合
 		for (Entry<String, Map<String, Lease<InstanceInfo>>> groupEntry : registry.entrySet()) {
 			Map<String, Lease<InstanceInfo>> leaseMap = groupEntry.getValue();
 			if (leaseMap != null) {
 				for (Entry<String, Lease<InstanceInfo>> leaseEntry : leaseMap.entrySet()) {
 					Lease<InstanceInfo> lease = leaseEntry.getValue();
+					// 判断是否过期，如果过期，则加入过期队列
 					if (lease.isExpired(additionalLeaseMs) && lease.getHolder() != null) {
 						expiredLeases.add(lease);
 					}
@@ -659,14 +670,17 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
 
 		// To compensate for GC pauses or drifting local time, we need to use current registry size as a base for
 		// triggering self-preservation. Without that we would wipe out full registry.
+		// 获得注册表中实例总数
 		int registrySize = (int) getLocalRegistrySize();
+		// 注册总数阈值，总数*0.85 默认值为0.85
 		int registrySizeThreshold = (int) (registrySize * serverConfig.getRenewalPercentThreshold());
+		// 计算被移除实例的个数
 		int evictionLimit = registrySize - registrySizeThreshold;
-
+		// 取最小值
 		int toEvict = Math.min(expiredLeases.size(), evictionLimit);
 		if (toEvict > 0) {
 			logger.info("Evicting {} items (expired={}, evictionLimit={})", toEvict, expiredLeases.size(), evictionLimit);
-
+			// 随机下线
 			Random random = new Random(System.currentTimeMillis());
 			for (int i = 0; i < toEvict; i++) {
 				// Pick a random item (Knuth shuffle algorithm)
@@ -678,6 +692,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
 				String id = lease.getHolder().getId();
 				EXPIRED.increment();
 				logger.warn("DS: Registry: expired lease for {}/{}", appName, id);
+				// 下线操作
 				internalCancel(appName, id, false);
 			}
 		}
@@ -1265,6 +1280,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
 			evictionTaskRef.get().cancel();
 		}
 		evictionTaskRef.set(new EvictionTask());
+		// 设置任务间隔，每1分钟执行一次
 		evictionTimer.schedule(evictionTaskRef.get(),
 		                       serverConfig.getEvictionIntervalTimerInMs(),
 		                       serverConfig.getEvictionIntervalTimerInMs());
@@ -1290,6 +1306,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
 
 		private final AtomicLong lastExecutionNanosRef = new AtomicLong(0l);
 
+		// 这里的任务不断检查租约是否过期
 		@Override
 		public void run() {
 			try {
