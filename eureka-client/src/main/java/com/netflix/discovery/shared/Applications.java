@@ -244,6 +244,7 @@ public class Applications {
      */
     @JsonIgnore
     public String getReconcileHashCode() {
+        // 计数集合
         TreeMap<String, AtomicInteger> instanceCountMap = new TreeMap<String, AtomicInteger>();
         populateInstanceCountMap(instanceCountMap);
         return getReconcileHashCode(instanceCountMap);
@@ -278,6 +279,7 @@ public class Applications {
     public static String getReconcileHashCode(Map<String, AtomicInteger> instanceCountMap) {
         StringBuilder reconcileHashCode = new StringBuilder(75);
         for (Map.Entry<String, AtomicInteger> mapEntry : instanceCountMap.entrySet()) {
+            // 进行hashCode的拼接 比如8个up，0个down，则UP_8_,8个up，2个down，则为DOWN_2_UP_8_
             reconcileHashCode.append(mapEntry.getKey()).append(STATUS_DELIMITER).append(mapEntry.getValue().get())
                     .append(STATUS_DELIMITER);
         }

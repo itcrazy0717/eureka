@@ -158,6 +158,7 @@ public class ResponseCacheImpl implements ResponseCache {
 				            });
 
 		if (shouldUseReadOnlyResponseCache) {
+			// 缓存更新任务
 			timer.schedule(getCacheUpdateTask(),
 			               new Date(((System.currentTimeMillis() / responseCacheUpdateIntervalMs) * responseCacheUpdateIntervalMs)
 			                        + responseCacheUpdateIntervalMs),
@@ -176,6 +177,7 @@ public class ResponseCacheImpl implements ResponseCache {
 			@Override
 			public void run() {
 				logger.debug("Updating the client cache from response cache");
+				// 循环缓存键
 				for (Key key : readOnlyCacheMap.keySet()) {
 					if (logger.isDebugEnabled()) {
 						logger.debug("Updating the client cache from response cache for key : {} {} {} {}",
@@ -183,8 +185,11 @@ public class ResponseCacheImpl implements ResponseCache {
 					}
 					try {
 						CurrentRequestVersion.set(key.getVersion());
+						// 从读写缓存中取值
 						Value cacheValue = readWriteCacheMap.get(key);
+						// 从当前的只读缓存中取值
 						Value currentCacheValue = readOnlyCacheMap.get(key);
+						// 当不一致时，进行替换
 						if (cacheValue != currentCacheValue) {
 							readOnlyCacheMap.put(key, cacheValue);
 						}
@@ -283,7 +288,7 @@ public class ResponseCacheImpl implements ResponseCache {
 		for (Key key : keys) {
 			logger.debug("Invalidating the response cache key : {} {} {} {}, {}",
 			             key.getEntityType(), key.getName(), key.getVersion(), key.getType(), key.getEurekaAccept());
-
+			// 过期读写缓存
 			readWriteCacheMap.invalidate(key);
 			Collection<Key> keysWithRegions = regionSpecificKeys.get(key);
 			if (null != keysWithRegions && !keysWithRegions.isEmpty()) {

@@ -50,6 +50,7 @@ public class InstanceRegionChecker {
 	}
 
 	public boolean isLocalRegion(@Nullable String instanceRegion) {
+		// 判断是否在本地存在
 		return null == instanceRegion || instanceRegion.equals(localRegion); // no region == local
 	}
 

@@ -1024,6 +1024,7 @@ public class DiscoveryClient implements EurekaClient {
 				getAndStoreFullRegistry();
 			}
 			else {
+				// 增量获取注册表
 				getAndUpdateDelta(applications);
 			}
 			applications.setAppsHashCode(applications.getReconcileHashCode());
@@ -1150,6 +1151,7 @@ public class DiscoveryClient implements EurekaClient {
 			delta = httpResponse.getEntity();
 		}
 
+		// 增量获取为空，则进行全量获取
 		if (delta == null) {
 			logger.warn("The server does not allow the delta revision to be applied because it is not safe. "
 			            + "Hence got the full registry.");
@@ -1160,7 +1162,9 @@ public class DiscoveryClient implements EurekaClient {
 			String reconcileHashCode = "";
 			if (fetchRegistryUpdateLock.tryLock()) {
 				try {
+					// 将变化的应用集合和本地缓存的应用集合进行合并
 					updateDelta(delta);
+					// 计算一致性哈希码
 					reconcileHashCode = getReconcileHashCode(applications);
 				} finally {
 					fetchRegistryUpdateLock.unlock();
@@ -1249,10 +1253,12 @@ public class DiscoveryClient implements EurekaClient {
 	 */
 	private void updateDelta(Applications delta) {
 		int deltaCount = 0;
+		// 遍历增量信息
 		for (Application app : delta.getRegisteredApplications()) {
 			for (InstanceInfo instance : app.getInstances()) {
 				Applications applications = getApplications();
 				String instanceRegion = instanceRegionChecker.getInstanceRegion(instance);
+				// 如果本地不存在
 				if (!instanceRegionChecker.isLocalRegion(instanceRegion)) {
 					Applications remoteApps = remoteRegionVsApps.get(instanceRegion);
 					if (null == remoteApps) {
@@ -1263,7 +1269,9 @@ public class DiscoveryClient implements EurekaClient {
 				}
 
 				++deltaCount;
+				// 如果是增加类型
 				if (ActionType.ADDED.equals(instance.getActionType())) {
+					// 如果本地不存在，则进行添加
 					Application existingApp = applications.getRegisteredApplications(instance.getAppName());
 					if (existingApp == null) {
 						applications.addApplication(app);
@@ -1271,7 +1279,9 @@ public class DiscoveryClient implements EurekaClient {
 					logger.debug("Added instance {} to the existing apps in region {}", instance.getId(), instanceRegion);
 					applications.getRegisteredApplications(instance.getAppName()).addInstance(instance);
 				}
+				// 如果是修改类型
 				else if (ActionType.MODIFIED.equals(instance.getActionType())) {
+					// 修改状态和增加状态是一致的，都是添加到本地
 					Application existingApp = applications.getRegisteredApplications(instance.getAppName());
 					if (existingApp == null) {
 						applications.addApplication(app);
@@ -1281,7 +1291,9 @@ public class DiscoveryClient implements EurekaClient {
 					applications.getRegisteredApplications(instance.getAppName()).addInstance(instance);
 
 				}
+				// 删除类型
 				else if (ActionType.DELETED.equals(instance.getActionType())) {
+					// 删除状态下是进行移除
 					Application existingApp = applications.getRegisteredApplications(instance.getAppName());
 					if (existingApp != null) {
 						logger.debug("Deleted instance {} to the existing apps ", instance.getId());
@@ -1300,6 +1312,7 @@ public class DiscoveryClient implements EurekaClient {
 		logger.debug("The total number of instances fetched by the delta processor : {}", deltaCount);
 
 		getApplications().setVersion(delta.getVersion());
+		// 过滤打乱应用集合
 		getApplications().shuffleInstances(clientConfig.shouldFilterOnlyUpInstances());
 
 		for (Applications applications : remoteRegionVsApps.values()) {
