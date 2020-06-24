@@ -140,6 +140,7 @@ public class ApplicationResource {
      *            a header parameter containing information whether this is
      *            replicated from other nodes.
      */
+    // 注意consumes注解，是接收所有的请求，当注册请求发起时会到达该接口
     @POST
     @Consumes({"application/json", "application/xml"})
     public Response addInstance(InstanceInfo info,

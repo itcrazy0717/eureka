@@ -189,6 +189,7 @@ public class EurekaBootStrap implements ServletContextListener {
 		}
         // 创建应用实例信息的注册表
 		PeerAwareInstanceRegistry registry;
+		// 如果是aws服务器（亚马逊服务器）跳过这里的逻辑
 		if (isAws(applicationInfoManager.getInfo())) {
 			registry = new AwsInstanceRegistry(
 					eurekaServerConfig,
@@ -200,6 +201,7 @@ public class EurekaBootStrap implements ServletContextListener {
 			awsBinder.start();
 		}
 		else {
+			// 创建PeerAwareInstanceRegistryImpl对象
 			registry = new PeerAwareInstanceRegistryImpl(
 					eurekaServerConfig,
 					eurekaClient.getEurekaClientConfig(),

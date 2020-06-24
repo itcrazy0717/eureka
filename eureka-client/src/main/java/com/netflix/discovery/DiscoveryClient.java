@@ -382,7 +382,7 @@ public class DiscoveryClient implements EurekaClient {
 
 		logger.info("Initializing Eureka in region {}", clientConfig.getRegion());
 
-		// 当无需和eureka-server交互时，初始化就结束了
+		// 当作为注册中心时，无需发起注册请求和拉取注册信息请求
 		if (!config.shouldRegisterWithEureka() && !config.shouldFetchRegistry()) {
 			logger.info("Client configured to neither register nor query for data.");
 			scheduler = null;

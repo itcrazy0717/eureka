@@ -105,6 +105,7 @@ public class PeerReplicationResource {
         String instanceStatus = toString(instanceInfo.getStatus());
 
         Builder singleResponseBuilder = new Builder();
+        // 服务端之间的请求分发，注册，心跳、下线、状态更新、删除覆盖
         switch (instanceInfo.getAction()) {
             case Register:
                 singleResponseBuilder = handleRegister(instanceInfo, applicationResource);

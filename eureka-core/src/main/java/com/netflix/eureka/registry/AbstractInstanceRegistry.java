@@ -1280,6 +1280,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
 		if (evictionTaskRef.get() != null) {
 			evictionTaskRef.get().cancel();
 		}
+		// EvictionTask会提出未续约的服务
 		evictionTaskRef.set(new EvictionTask());
 		// 设置任务间隔，每1分钟执行一次
 		evictionTimer.schedule(evictionTaskRef.get(),
