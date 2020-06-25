@@ -414,7 +414,7 @@ public class DiscoveryClient implements EurekaClient {
 					                                             .setDaemon(true)
 					                                             .build());
 
-			// 心跳线程池
+			// 心跳线程池 核心线程为1，最大线程默认为5个
 			heartbeatExecutor = new ThreadPoolExecutor(
 					1, clientConfig.getHeartbeatExecutorThreadPoolSize(), 0, TimeUnit.SECONDS,
 					new SynchronousQueue<Runnable>(),
@@ -452,6 +452,7 @@ public class DiscoveryClient implements EurekaClient {
 		}
 		// 从eureka-sever拉取注册信息
 		if (clientConfig.shouldFetchRegistry() && !fetchRegistry(false)) {
+			// 目前这里为空实现
 			fetchRegistryFromBackup();
 		}
 

@@ -210,19 +210,22 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
 		try {
 			// 获取读锁
 			read.lock();
-			// 首先从缓存中获取注册信息
+			// 首先通过eureka-client注册名从缓存中获取注册信息
 			Map<String, Lease<InstanceInfo>> gMap = registry.get(registrant.getAppName());
 			// 增加注册次数到监控
 			REGISTER.increment(isReplication);
-			// 如果租约信息为空，则进行添加，注意key为注册名称
+			// 如果租约信息为空，则进行添加，注意key为注册名称[也就是服务注册的名称]
+			// 表示服务器上未存储当前服务注册信息
 			if (gMap == null) {
 				final ConcurrentHashMap<String, Lease<InstanceInfo>> gNewMap = new ConcurrentHashMap<String, Lease<InstanceInfo>>();
+				// 这里进行租约注册，注意key是client注册名，此时的map为空
 				gMap = registry.putIfAbsent(registrant.getAppName(), gNewMap);
 				if (gMap == null) {
 					gMap = gNewMap;
 				}
 			}
-			// 通过instanceId获取租约信息
+			// 通过id获取租约信息 一般来说id和instanceId是一样的
+			// instanceId为服务ip+服务注册名+端口号[这是spring-boot中的instanceId]
 			Lease<InstanceInfo> existingLease = gMap.get(registrant.getId());
 			// Retain the last dirty timestamp without overwriting it, if there is already a lease
 			// 如果租约信息存在
@@ -254,13 +257,13 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
 				}
 				logger.debug("No previous lease information found; it is new registration");
 			}
-			// 租约不存在，则进行注册
+			// 构建租约信息
 			Lease<InstanceInfo> lease = new Lease<InstanceInfo>(registrant, leaseDuration);
 			// 若租约已存在，设置租约的开始服务时间戳
 			if (existingLease != null) {
 				lease.setServiceUpTimestamp(existingLease.getServiceUpTimestamp());
 			}
-			// 进行注册
+			// 注册信息添加到map中 这里可理解为替换 因为前面已经对map进行了关联
 			gMap.put(registrant.getId(), lease);
 			// 添加到最近注册的调试队列
 			recentRegisteredQueue.add(new Pair<Long, String>(

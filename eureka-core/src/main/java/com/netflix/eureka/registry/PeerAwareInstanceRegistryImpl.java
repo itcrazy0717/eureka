@@ -398,8 +398,10 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
 	 */
 	@Override
 	public void register(final InstanceInfo info, final boolean isReplication) {
-		// 租约过期时间
+		// 租约过期时间 默认租约过期时间为90秒，续约时间为每30秒一次
+		// 这样在可保证网络异常的情况下，有3次重试机会
 		int leaseDuration = Lease.DEFAULT_DURATION_IN_SECS;
+		// 是否进行了自定义租约时间，如果进行了自定义则进行覆盖
 		if (info.getLeaseInfo() != null && info.getLeaseInfo().getDurationInSecs() > 0) {
 			leaseDuration = info.getLeaseInfo().getDurationInSecs();
 		}

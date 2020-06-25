@@ -165,6 +165,7 @@ public class ApplicationResource {
         }
 
         // handle cases where clients may be registering with bad DataCenterInfo with missing data
+        // 获取数据中心
         DataCenterInfo dataCenterInfo = info.getDataCenterInfo();
         if (dataCenterInfo instanceof UniqueIdentifier) {
             String dataCenterInfoId = ((UniqueIdentifier) dataCenterInfo).getId();
