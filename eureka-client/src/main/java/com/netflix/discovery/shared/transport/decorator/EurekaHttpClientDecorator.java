@@ -134,6 +134,7 @@ public abstract class EurekaHttpClientDecorator implements EurekaHttpClient {
 
 	@Override
 	public EurekaHttpResponse<Applications> getApplications(final String... regions) {
+		// 责任链源头
 		return execute(new RequestExecutor<Applications>() {
 			@Override
 			public EurekaHttpResponse<Applications> execute(EurekaHttpClient delegate) {

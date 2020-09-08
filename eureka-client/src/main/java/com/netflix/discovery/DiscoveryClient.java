@@ -454,6 +454,7 @@ public class DiscoveryClient implements EurekaClient {
 			throw new RuntimeException("Failed to initialize DiscoveryClient!", e);
 		}
 		// 从eureka-sever拉取注册信息
+		// fetchRegistry拉取注册信息
 		if (clientConfig.shouldFetchRegistry() && !fetchRegistry(false)) {
 			// 目前这里为空实现
 			fetchRegistryFromBackup();
@@ -1113,6 +1114,8 @@ public class DiscoveryClient implements EurekaClient {
 		Applications apps = null;
 		// 通过getApplications获取全量注册信息
 		EurekaHttpResponse<Applications> httpResponse = clientConfig.getRegistryRefreshSingleVipAddress() == null
+		                                                // 注意这里为责任链模式，链路比较长 从com.netflix.discovery.shared.transport.decorator.EurekaHttpClientDecorator开始
+		                                                // 第一个链为SessionedEurekaHttpClient
 		                                                ? eurekaTransport.queryClient.getApplications(remoteRegionsRef.get())
 		                                                : eurekaTransport.queryClient.getVip(clientConfig.getRegistryRefreshSingleVipAddress(), remoteRegionsRef.get());
 		if (httpResponse.getStatusCode() == Status.OK.getStatusCode()) {
