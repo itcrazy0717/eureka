@@ -341,6 +341,7 @@ public class DiscoveryClient implements EurekaClient {
 		}
 
 		this.applicationInfoManager = applicationInfoManager;
+		// eureka实例对象，包含eureka的相关信息
 		InstanceInfo myInfo = applicationInfoManager.getInfo();
 
 		clientConfig = config;
@@ -348,6 +349,7 @@ public class DiscoveryClient implements EurekaClient {
 		transportConfig = config.getTransportConfig();
 		instanceInfo = myInfo;
 		if (myInfo != null) {
+			// 服务路径拼接 appName+实例id eg:server01/001
 			appPathIdentifier = instanceInfo.getAppName() + "/" + instanceInfo.getId();
 		}
 		else {
@@ -365,7 +367,7 @@ public class DiscoveryClient implements EurekaClient {
 		remoteRegionsToFetch = new AtomicReference<String>(clientConfig.fetchRegistryForRemoteRegions());
 		remoteRegionsRef = new AtomicReference<>(remoteRegionsToFetch.get() == null ? null : remoteRegionsToFetch.get().split(","));
 
-		// 初始化拉取、心跳监控
+		// 是否要拉取注册信息 检索服务信息，一般eureka-client配置为true，该值默认为true
 		if (config.shouldFetchRegistry()) {
 			this.registryStalenessMonitor = new ThresholdLevelsMetric(this, METRIC_REGISTRY_PREFIX + "lastUpdateSec_", new long[]{15L, 30L, 60L, 120L, 240L, 480L});
 		}
@@ -373,6 +375,7 @@ public class DiscoveryClient implements EurekaClient {
 			this.registryStalenessMonitor = ThresholdLevelsMetric.NO_OP_METRIC;
 		}
 
+		// 是否要注册到注册中心
 		if (config.shouldRegisterWithEureka()) {
 			this.heartbeatStalenessMonitor = new ThresholdLevelsMetric(this, METRIC_REGISTRATION_PREFIX + "lastHeartbeatSec_", new long[]{15L, 30L, 60L, 120L, 240L, 480L});
 		}
@@ -407,7 +410,7 @@ public class DiscoveryClient implements EurekaClient {
 
 		try {
 			// default size of 2 - 1 each for heartbeat and cacheRefresh
-			// 定时任务线程池
+			// 任务调度线程池
 			scheduler = Executors.newScheduledThreadPool(2,
 			                                             new ThreadFactoryBuilder()
 					                                             .setNameFormat("DiscoveryClient-%d")
@@ -423,7 +426,7 @@ public class DiscoveryClient implements EurekaClient {
 							.setDaemon(true)
 							.build()
 			);  // use direct handoff
-			// 服务获取线程池
+			// 服务信息缓存刷新线程池
 			cacheRefreshExecutor = new ThreadPoolExecutor(
 					1, clientConfig.getCacheRefreshExecutorThreadPoolSize(), 0, TimeUnit.SECONDS,
 					new SynchronousQueue<Runnable>(),
@@ -1330,7 +1333,7 @@ public class DiscoveryClient implements EurekaClient {
 		// 客户端是否应该拉取注册信息 默认为true
 		if (clientConfig.shouldFetchRegistry()) {
 			// registry cache refresh timer
-			// 间隔拉取时间，默认30秒
+			// 拉取间隔时间，默认30秒
 			int registryFetchIntervalSeconds = clientConfig.getRegistryFetchIntervalSeconds();
 			int expBackOffBound = clientConfig.getCacheRefreshExecutorExponentialBackOffBound();
 			cacheRefreshTask = new TimedSupervisorTask(

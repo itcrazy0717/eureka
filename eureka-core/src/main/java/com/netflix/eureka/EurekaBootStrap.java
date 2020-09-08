@@ -137,6 +137,7 @@ public class EurekaBootStrap implements ServletContextListener {
 	protected void initEurekaEnvironment() throws Exception {
 		logger.info("Setting the eureka configuration..");
 		// 设置配置文件的数据中心
+		// getConfigInstance使用的是double-check单例模式，生成ConcurrentCompositeConfiguration对象
 		String dataCenter = ConfigurationManager.getConfigInstance().getString(EUREKA_DATACENTER);
 		if (dataCenter == null) {
 			logger.info("Eureka data center value eureka.datacenter is not set, defaulting to default");
@@ -172,7 +173,7 @@ public class EurekaBootStrap implements ServletContextListener {
 		ServerCodecs serverCodecs = new DefaultServerCodecs(eurekaServerConfig);
 
 		ApplicationInfoManager applicationInfoManager = null;
-        // 创建eureka-client
+        // 创建eureka-client 用于与其他eureka-server通信
 		if (eurekaClient == null) {
 			EurekaInstanceConfig instanceConfig = isCloud(ConfigurationManager.getDeploymentContext())
 			                                      ? new CloudInstanceConfig()

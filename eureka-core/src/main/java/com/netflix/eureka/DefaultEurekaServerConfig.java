@@ -93,7 +93,8 @@ public class DefaultEurekaServerConfig implements EurekaServerConfig {
     private final DynamicStringProperty myUrl = configInstance.getStringProperty(namespace + "myUrl", null);
 
     public DefaultEurekaServerConfig() {
-        init();
+        // 初始化eureka-server配置
+    	init();
     }
 
     public DefaultEurekaServerConfig(String namespace) {
@@ -111,6 +112,7 @@ public class DefaultEurekaServerConfig implements EurekaServerConfig {
         try {
             // ConfigurationManager
             // .loadPropertiesFromResources(eurekaPropsFile);
+	        // 从配置文件中读取相关配置
             ConfigurationManager
                     .loadCascadedPropertiesFromResources(eurekaPropsFile);
         } catch (IOException e) {

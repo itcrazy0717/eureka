@@ -77,7 +77,8 @@ public class DefaultEurekaClientConfig implements EurekaClientConfig {
     }
 
     public DefaultEurekaClientConfig(String namespace) {
-        this.namespace = namespace.endsWith(".")
+        // 命名空间 以.隔开
+    	this.namespace = namespace.endsWith(".")
                 ? namespace
                 : namespace + ".";
 
