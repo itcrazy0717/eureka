@@ -66,6 +66,12 @@ import org.slf4j.LoggerFactory;
  * @author Karthik Ranganathan, Greg Kim, David Liu
  */
 // 实现了ServletContextListener因此在容器(Tomcat、Jetty)启动时，会调用contextInitialized方法
+// EurekaBootStrap实现了ServletContextListener，并在web.xml中进行了配置，因此在容器启动的时候会调用contextInitialized方法
+/**
+ * <listener>
+ * <listener-class>com.netflix.eureka.EurekaBootStrap</listener-class>
+ * </listener>
+ */
 public class EurekaBootStrap implements ServletContextListener {
 	private static final Logger logger = LoggerFactory.getLogger(EurekaBootStrap.class);
 
@@ -179,6 +185,8 @@ public class EurekaBootStrap implements ServletContextListener {
 			                                      ? new CloudInstanceConfig()
 			                                      : new MyDataCenterInstanceConfig();
 
+			// 创建ApplicationInfoManager对象，将eureka实例相关信息设置到ApplicationInfoManager中
+			// 这里的EurekaConfigBasedInstanceInfoProvider对象也非常重要，构建eureka实例相关信息
 			applicationInfoManager = new ApplicationInfoManager(
 					instanceConfig, new EurekaConfigBasedInstanceInfoProvider(instanceConfig).get());
 
@@ -234,8 +242,9 @@ public class EurekaBootStrap implements ServletContextListener {
 		logger.info("Initialized server context");
 
 		// Copy registry from neighboring eureka node
-		// 从其他server拉取注册信息
+		// 这里并不是从其他eureka节点拷贝信息，而是从本地内存中进行注册，主要是更新相关时间戳
 		int registryCount = registry.syncUp();
+		// 开启服务下线检查，将实例状态更改为UP，表示可以接收数据传输
 		registry.openForTraffic(applicationInfoManager, registryCount);
 
 		// 注册监控

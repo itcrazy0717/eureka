@@ -26,6 +26,7 @@ import org.slf4j.LoggerFactory;
  * @author elandau
  *
  */
+// eureka实例信息提供器
 @Singleton
 public class EurekaConfigBasedInstanceInfoProvider implements Provider<InstanceInfo> {
     private static final Logger LOG = LoggerFactory.getLogger(EurekaConfigBasedInstanceInfoProvider.class);

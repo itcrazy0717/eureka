@@ -151,7 +151,9 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
 		this.peerEurekaNodes = peerEurekaNodes;
 		// 初始化响应缓存
 		initializedResponseCache();
+		// 更新租约相关信息
 		scheduleRenewalThresholdUpdateTask();
+		// 初始化远程注册信息
 		initRemoteRegionRegistry();
 
 		try {
@@ -189,6 +191,7 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
 	 * many instances at a time.
 	 */
 	private void scheduleRenewalThresholdUpdateTask() {
+		// 每15分钟更新一次
 		timer.schedule(new TimerTask() {
 			               @Override
 			               public void run() {
@@ -207,21 +210,25 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
 	public int syncUp() {
 		// Copy entire entry from neighboring DS node
 		int count = 0;
-
+        // 如果count=0,默认重试5次进行实例信息的注册
 		for (int i = 0; ((i < serverConfig.getRegistrySyncRetries()) && (count == 0)); i++) {
 			if (i > 0) {
 				try {
+					// 从第二次开始，每次默认sleep30秒
 					Thread.sleep(serverConfig.getRegistrySyncRetryWaitMs());
 				} catch (InterruptedException e) {
 					logger.warn("Interrupted during registry transfer..");
 					break;
 				}
 			}
+			// 从本地获取注册信息
 			Applications apps = eurekaClient.getApplications();
 			for (Application app : apps.getRegisteredApplications()) {
 				for (InstanceInfo instance : app.getInstances()) {
 					try {
+						// 判断是否可以注册
 						if (isRegisterable(instance)) {
+							// 注册到当前eureka server中
 							register(instance, instance.getLeaseInfo().getDurationInSecs(), true);
 							count++;
 						}
@@ -525,8 +532,10 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
 		try {
 			Applications apps = eurekaClient.getApplications();
 			int count = 0;
+			// 遍历eureka注册实例
 			for (Application app : apps.getRegisteredApplications()) {
 				for (InstanceInfo instance : app.getInstances()) {
+					// 实例是否已经注册到当前的zone
 					if (this.isRegisterable(instance)) {
 						++count;
 					}
@@ -535,6 +544,7 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
 			synchronized (lock) {
 				// Update threshold only if the threshold is greater than the
 				// current expected threshold or if self preservation is disabled.
+				// 对租约续约次数进行更新
 				if ((count) > (serverConfig.getRenewalPercentThreshold() * expectedNumberOfClientsSendingRenews)
 				    || (!this.isSelfPreservationModeEnabled())) {
 					this.expectedNumberOfClientsSendingRenews = count;

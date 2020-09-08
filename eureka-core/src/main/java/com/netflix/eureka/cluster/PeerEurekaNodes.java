@@ -73,6 +73,7 @@ public class PeerEurekaNodes {
     }
 
     public void start() {
+    	// 构建任务执行器
         taskExecutor = Executors.newSingleThreadScheduledExecutor(
                 new ThreadFactory() {
                     @Override
@@ -84,6 +85,7 @@ public class PeerEurekaNodes {
                 }
         );
         try {
+        	// 更新节点信息
             updatePeerEurekaNodes(resolvePeerUrls());
             Runnable peersUpdateTask = new Runnable() {
                 @Override
@@ -96,6 +98,7 @@ public class PeerEurekaNodes {
 
                 }
             };
+            // 每10分钟进行节点信息更新
             taskExecutor.scheduleWithFixedDelay(
                     peersUpdateTask,
                     serverConfig.getPeerEurekaNodesUpdateIntervalMs(),
@@ -128,13 +131,17 @@ public class PeerEurekaNodes {
      * @return peer URLs with node's own URL filtered out
      */
     protected List<String> resolvePeerUrls() {
-        InstanceInfo myInfo = applicationInfoManager.getInfo();
-        String zone = InstanceInfo.getZone(clientConfig.getAvailabilityZones(clientConfig.getRegion()), myInfo);
+        // 获取节点信息
+    	InstanceInfo myInfo = applicationInfoManager.getInfo();
+        // 获取集群zone信息
+    	String zone = InstanceInfo.getZone(clientConfig.getAvailabilityZones(clientConfig.getRegion()), myInfo);
+        // 提取集群地址
         List<String> replicaUrls = EndpointUtils
                 .getDiscoveryServiceUrls(clientConfig, zone, new EndpointUtils.InstanceInfoBasedUrlRandomizer(myInfo));
 
         int idx = 0;
         while (idx < replicaUrls.size()) {
+            // 剔除本地节点
             if (isThisMyUrl(replicaUrls.get(idx))) {
                 replicaUrls.remove(idx);
             } else {
@@ -195,11 +202,13 @@ public class PeerEurekaNodes {
     }
 
     protected PeerEurekaNode createPeerEurekaNode(String peerEurekaNodeUrl) {
-        HttpReplicationClient replicationClient = JerseyReplicationClient.createReplicationClient(serverConfig, serverCodecs, peerEurekaNodeUrl);
+        // 创建集群通信客户端
+    	HttpReplicationClient replicationClient = JerseyReplicationClient.createReplicationClient(serverConfig, serverCodecs, peerEurekaNodeUrl);
         String targetHost = hostFromUrl(peerEurekaNodeUrl);
         if (targetHost == null) {
             targetHost = "host";
         }
+        // 创建集群节点
         return new PeerEurekaNode(registry, targetHost, peerEurekaNodeUrl, replicationClient, serverConfig);
     }
 
@@ -236,6 +245,7 @@ public class PeerEurekaNodes {
         if (myUrlConfigured != null) {
             return myUrlConfigured.equals(url);
         }
+        // 是否是当前实例url
         return isInstanceURL(url, applicationInfoManager.getInfo());
     }
     
