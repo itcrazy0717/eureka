@@ -118,7 +118,7 @@ class InstanceInfoReplicator implements Runnable {
 							logger.debug("Canceling the latest scheduled update, it will be rescheduled at the end of on demand update");
 							latestPeriodic.cancel(false);
 						}
-
+                        // 直接调用run方法进行实例注册
 						InstanceInfoReplicator.this.run();
 					}
 				});

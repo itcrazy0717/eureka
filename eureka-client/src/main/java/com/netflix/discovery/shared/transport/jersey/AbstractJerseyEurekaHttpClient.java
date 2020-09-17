@@ -201,7 +201,7 @@ public abstract class AbstractJerseyEurekaHttpClient implements EurekaHttpClient
 			}
 			Builder requestBuilder = webResource.getRequestBuilder();
 			addExtraHeaders(requestBuilder);
-			// 前面已通过责任链模式发起请求，这里直接获取相关值即可
+			// 责任链模式最终走到该处，通过get发起http请求
 			response = requestBuilder.accept(MediaType.APPLICATION_JSON_TYPE).get(ClientResponse.class);
 
 			Applications applications = null;

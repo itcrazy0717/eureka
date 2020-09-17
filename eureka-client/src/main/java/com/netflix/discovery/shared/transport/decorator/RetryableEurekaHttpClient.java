@@ -113,6 +113,7 @@ public class RetryableEurekaHttpClient extends EurekaHttpClientDecorator {
                 }
 
                 currentEndpoint = candidateHosts.get(endpointIdx++);
+                // 构建httpclient
                 currentHttpClient = clientFactory.newClient(currentEndpoint);
             }
 

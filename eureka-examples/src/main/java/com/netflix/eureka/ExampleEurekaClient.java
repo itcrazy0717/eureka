@@ -127,7 +127,7 @@ public class ExampleEurekaClient {
 
 
         // shutdown the client
-        eurekaClient.shutdown();
+        // eurekaClient.shutdown();
     }
 
     /**

@@ -1386,7 +1386,7 @@ public class DiscoveryClient implements EurekaClient {
 					clientConfig.getInstanceInfoReplicationIntervalSeconds(),
 					2); // burstSize
 
-			// 状态改变监听器
+			// 状态改变监听器 在spring-boot中启动时，接收消息，进行服务启动注册
 			statusChangeListener = new ApplicationInfoManager.StatusChangeListener() {
 				@Override
 				public String getId() {
@@ -1403,6 +1403,7 @@ public class DiscoveryClient implements EurekaClient {
 					else {
 						logger.info("Saw local status change event {}", statusChangeEvent);
 					}
+					// 通过实例信息复制器更新状态
 					instanceInfoReplicator.onDemandUpdate();
 				}
 			};
