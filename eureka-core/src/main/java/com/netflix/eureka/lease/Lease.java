@@ -132,6 +132,9 @@ public class Lease<T> {
      * @param additionalLeaseMs any additional lease time to add to the lease evaluation in ms.
      */
     public boolean isExpired(long additionalLeaseMs) {
+    	// 如果当前时间>(服务最后更新时间+持续时间间隔+补偿时间)，则过期
+	    // 比如最后更新时间为3点，服务持续时间为90秒，则为3点1分30秒，如果当前时间为3分3分，则表示已过期
+	    // 因为服务续约时间为每30秒一次
         return (evictionTimestamp > 0 || System.currentTimeMillis() > (lastUpdateTimestamp + duration + additionalLeaseMs));
     }
 
