@@ -37,7 +37,10 @@ public class Lease<T> {
         Register, Cancel, Renew
     };
 
-    public static final int DEFAULT_DURATION_IN_SECS = 90;
+	/**
+	 * 默认实例持续时间，90秒
+	 */
+	public static final int DEFAULT_DURATION_IN_SECS = 90;
 
     /**
      * 实体，租约持有者
@@ -133,8 +136,9 @@ public class Lease<T> {
      */
     public boolean isExpired(long additionalLeaseMs) {
     	// 如果当前时间>(服务最后更新时间+持续时间间隔+补偿时间)，则过期
-	    // 比如最后更新时间为3点，服务持续时间为90秒，则为3点1分30秒，如果当前时间为3分3分，则表示已过期
-	    // 因为服务续约时间为每30秒一次
+	    // 比如最后更新时间为3点，服务持续时间为90秒，此时如果不加补偿时间,lastUpdateTimestamp + duration=3点1分30秒
+	    // 如果当前时间为3分3分，则当前时间大于后面的和，则表示已过期，因为服务续约时间为每30秒一次
+	    // 则lastUpdateTimestamp每隔30秒会进行更新，如果90秒内还未更新，则会被踢出
         return (evictionTimestamp > 0 || System.currentTimeMillis() > (lastUpdateTimestamp + duration + additionalLeaseMs));
     }
 
