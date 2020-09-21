@@ -144,7 +144,8 @@ class AcceptorExecutor<ID, T> {
     }
 
     BlockingQueue<List<TaskHolder<ID, T>>> requestWorkItems() {
-        batchWorkRequests.release();
+        // 释放锁，返回任务队列
+    	batchWorkRequests.release();
         return batchWorkQueue;
     }
 

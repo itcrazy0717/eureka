@@ -428,13 +428,14 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
 					RENEW_NOT_FOUND.increment(isReplication);
 					return false;
 				}
-				// 设置应用实例状态
+				// 如果应用实例状态不等于up，则进行强制更新
 				if (!instanceInfo.getStatus().equals(overriddenInstanceStatus)) {
 					logger.info(
 							"The instance status {} is different from overridden instance status {} for instance {}. "
 							+ "Hence setting the status to overridden status", instanceInfo.getStatus().name(),
 							instanceInfo.getOverriddenStatus().name(),
 							instanceInfo.getId());
+					// 重新设置实例status为up
 					instanceInfo.setStatusWithoutDirty(overriddenInstanceStatus);
 
 				}

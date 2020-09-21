@@ -237,7 +237,8 @@ public class EurekaBootStrap implements ServletContextListener {
         // 初始化EurekaServerContextHolder
 		EurekaServerContextHolder.initialize(serverContext);
 
-		// 初始化eureka-server上下文
+		// 初始化eureka-server上下文，如果有集群，则会进行集群同步
+		// spring-boot中和这里是不一样的，不过整体流程没变，spring-boot是在初始化eurekaServerContext时进行判断是否需要进行集群同步
 		serverContext.initialize();
 		logger.info("Initialized server context");
 

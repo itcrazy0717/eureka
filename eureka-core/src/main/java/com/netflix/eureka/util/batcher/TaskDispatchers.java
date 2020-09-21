@@ -47,7 +47,8 @@ public class TaskDispatchers {
         return new TaskDispatcher<ID, T>() {
             @Override
             public void process(ID id, T task, long expiryTime) {
-                acceptorExecutor.process(id, task, expiryTime);
+                // 将任务添加到异步队列中
+            	acceptorExecutor.process(id, task, expiryTime);
             }
 
             @Override

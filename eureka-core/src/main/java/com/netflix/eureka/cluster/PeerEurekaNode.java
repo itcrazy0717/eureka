@@ -58,6 +58,7 @@ public class PeerEurekaNode {
     private static final long SERVER_UNAVAILABLE_SLEEP_TIME_MS = 1000;
 
     /**
+     *
      * Maximum amount of time in ms to wait for new items prior to dispatching a batch of tasks.
      */
     private static final long MAX_BATCHING_DELAY_MS = 500;
@@ -100,7 +101,9 @@ public class PeerEurekaNode {
         this.maxProcessingDelayMs = config.getMaxTimeForReplication();
 
         String batcherName = getBatcherName();
+        // 创建任务处理器
         ReplicationTaskProcessor taskProcessor = new ReplicationTaskProcessor(targetHost, replicationClient);
+        // 构建批量任务处理器，该任务处理器的构造函数需要特别注意，任务线程会一直执行
         this.batchingDispatcher = TaskDispatchers.createBatchingTaskDispatcher(
                 batcherName,
                 config.getMaxElementsInPeerReplicationPool(),
@@ -133,6 +136,9 @@ public class PeerEurekaNode {
      */
     public void register(final InstanceInfo info) throws Exception {
         long expiryTime = System.currentTimeMillis() + getLeaseRenewalOf(info);
+        // 调用批量任务处理器进行处理
+	    // 将任务添加到队列中，然后异步取任务进行回调处理
+	    // com.netflix.eureka.util.batcher.TaskDispatcher.process
         batchingDispatcher.process(
                 taskId("register", info),
                 new InstanceReplicationTask(targetHost, Action.Register, info, null, true) {

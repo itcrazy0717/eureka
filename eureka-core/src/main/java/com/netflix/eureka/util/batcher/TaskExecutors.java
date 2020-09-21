@@ -46,6 +46,7 @@ class TaskExecutors<ID, T> {
             Thread workerThread = new Thread(threadGroup, runnable, runnable.getWorkerName());
             workerThreads.add(workerThread);
             workerThread.setDaemon(true);
+            // 注意此处已经将任务处理器启动，因此直接查看其run方法
             workerThread.start();
         }
     }
@@ -76,6 +77,7 @@ class TaskExecutors<ID, T> {
         final AtomicBoolean isShutdown = new AtomicBoolean();
         final TaskExecutorMetrics metrics = new TaskExecutorMetrics(name);
         registeredMonitors.put(name, metrics);
+        // 构建任务处理器
         return new TaskExecutors<>(idx -> new BatchWorkerRunnable<>("TaskBatchingWorker-" + name + '-' + idx, isShutdown, metrics, processor, acceptorExecutor), workerCount, isShutdown);
     }
 
@@ -169,6 +171,7 @@ class TaskExecutors<ID, T> {
         }
     }
 
+    // 批量任务处理器
     static class BatchWorkerRunnable<ID, T> extends WorkerRunnable<ID, T> {
 
         BatchWorkerRunnable(String workerName,
@@ -182,7 +185,9 @@ class TaskExecutors<ID, T> {
         @Override
         public void run() {
             try {
+            	// 任务处理器具体执行逻辑，这里在
                 while (!isShutdown.get()) {
+                	// 队列中取出任务进行处理，这里为阻塞队列
                     List<TaskHolder<ID, T>> holders = getWork();
                     metrics.registerExpiryTimes(holders);
 
@@ -212,6 +217,7 @@ class TaskExecutors<ID, T> {
             BlockingQueue<List<TaskHolder<ID, T>>> workQueue = taskDispatcher.requestWorkItems();
             List<TaskHolder<ID, T>> result;
             do {
+            	// 每1秒进行任务的拉取，如果任务不为空，则返回相应任务
                 result = workQueue.poll(1, TimeUnit.SECONDS);
             } while (!isShutdown.get() && result == null);
             return (result == null) ? new ArrayList<>() : result;
@@ -226,6 +232,7 @@ class TaskExecutors<ID, T> {
         }
     }
 
+    // 单任务处理器
     static class SingleTaskWorkerRunnable<ID, T> extends WorkerRunnable<ID, T> {
 
         SingleTaskWorkerRunnable(String workerName,

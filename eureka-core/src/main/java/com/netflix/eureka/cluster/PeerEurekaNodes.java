@@ -85,7 +85,7 @@ public class PeerEurekaNodes {
                 }
         );
         try {
-        	// 更新节点信息
+        	// 更新节点信息，这里通过配置文件拿到集群中对端的节点连接
             updatePeerEurekaNodes(resolvePeerUrls());
             Runnable peersUpdateTask = new Runnable() {
                 @Override
@@ -126,6 +126,7 @@ public class PeerEurekaNodes {
     }
 
     /**
+     * 返回集群中其他端的url连接
      * Resolve peer URLs.
      *
      * @return peer URLs with node's own URL filtered out
@@ -193,7 +194,8 @@ public class PeerEurekaNodes {
         if (!toAdd.isEmpty()) {
             logger.info("Adding new peer nodes {}", toAdd);
             for (String peerUrl : toAdd) {
-                newNodeList.add(createPeerEurekaNode(peerUrl));
+                // 增加新的节点信息，主要进行逻辑在createPeerEurekaNode
+            	newNodeList.add(createPeerEurekaNode(peerUrl));
             }
         }
 
