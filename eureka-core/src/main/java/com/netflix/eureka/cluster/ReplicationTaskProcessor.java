@@ -75,10 +75,14 @@ class ReplicationTaskProcessor implements TaskProcessor<ReplicationTask> {
 
     @Override
     public ProcessingResult process(List<ReplicationTask> tasks) {
-        ReplicationList list = createReplicationListOf(tasks);
+        // 创建任务list
+    	ReplicationList list = createReplicationListOf(tasks);
         try {
+        	// 向对端发送请求
             EurekaHttpResponse<ReplicationListResponse> response = replicationClient.submitBatchUpdates(list);
             int statusCode = response.getStatusCode();
+            // 判断请求是否成功，注意这里的判断条件
+	        // statusCode >= 200 && statusCode < 300
             if (!isSuccess(statusCode)) {
                 if (statusCode == 503) {
                     logger.warn("Server busy (503) HTTP status code received from the peer {}; rescheduling tasks after delay", peerId);
@@ -89,6 +93,8 @@ class ReplicationTaskProcessor implements TaskProcessor<ReplicationTask> {
                     return ProcessingResult.PermanentError;
                 }
             } else {
+            	// 如果成功或不在200到300之间的statusCode
+	            // 进行批量返回处理
                 handleBatchResponse(tasks, response.getEntity().getResponseList());
             }
         } catch (Throwable e) {
@@ -140,12 +146,14 @@ class ReplicationTaskProcessor implements TaskProcessor<ReplicationTask> {
 
     private void handleBatchResponse(ReplicationTask task, ReplicationInstanceResponse response) {
         int statusCode = response.getStatusCode();
+        // 如果成功则直接返回
         if (isSuccess(statusCode)) {
             task.handleSuccess();
             return;
         }
 
         try {
+        	// 处理失败的任务
             task.handleFailure(response.getStatusCode(), response.getResponseEntity());
         } catch (Throwable e) {
             logger.error("Replication task {} error handler failure", task.getTaskName(), e);

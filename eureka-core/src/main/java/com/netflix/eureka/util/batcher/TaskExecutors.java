@@ -191,7 +191,9 @@ class TaskExecutors<ID, T> {
                     List<TaskHolder<ID, T>> holders = getWork();
                     metrics.registerExpiryTimes(holders);
 
+                    // 提取任务信息
                     List<T> tasks = getTasksOf(holders);
+                    // 处理任务
                     ProcessingResult result = processor.process(tasks);
                     switch (result) {
                         case Success:

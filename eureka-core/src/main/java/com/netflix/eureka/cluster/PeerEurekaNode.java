@@ -213,8 +213,11 @@ public class PeerEurekaNode {
 
             @Override
             public void handleFailure(int statusCode, Object responseEntity) throws Throwable {
-                super.handleFailure(statusCode, responseEntity);
-                if (statusCode == 404) {
+                // 处理失败的心跳任务，注意父类的handleFailure方法为空
+            	super.handleFailure(statusCode, responseEntity);
+                // 如果statusCode为404，则再次进行注册，这样同步到对端，
+	            // 实现实例信息的同步
+            	if (statusCode == 404) {
                     logger.warn("{}: missing entry.", getTaskName());
                     if (info != null) {
                         logger.warn("{}: cannot find instance id {} and hence replicating the instance with status {}",
