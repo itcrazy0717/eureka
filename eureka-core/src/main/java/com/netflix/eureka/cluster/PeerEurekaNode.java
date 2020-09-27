@@ -138,7 +138,7 @@ public class PeerEurekaNode {
         long expiryTime = System.currentTimeMillis() + getLeaseRenewalOf(info);
         // 调用批量任务处理器进行处理
 	    // 将任务添加到队列中，然后异步取任务进行回调处理
-	    // com.netflix.eureka.util.batcher.TaskDispatcher.process
+	    // com.netflix.eureka.util.batcher.TaskDispatcher#process
         batchingDispatcher.process(
                 taskId("register", info),
                 new InstanceReplicationTask(targetHost, Action.Register, info, null, true) {
@@ -217,6 +217,13 @@ public class PeerEurekaNode {
             	super.handleFailure(statusCode, responseEntity);
                 // 如果statusCode为404，则再次进行注册，这样同步到对端，
 	            // 实现实例信息的同步
+	            /**
+	             * 这里为什么会出现404的情况
+	             * 因为在register的时候，集群中节点还未正餐启动，实例信息就不会同步到集群的相关节点
+	             * 然后发送心跳检测，调用如下函数
+	             * com.netflix.eureka.resources.InstanceResource#renewLease(java.lang.String, java.lang.String, java.lang.String, java.lang.String)
+	             * 此时续租找不到对应的实例信息，从而发生404的现象，因此进行再次注册，达到集群节点信息的同步
+	             */
             	if (statusCode == 404) {
                     logger.warn("{}: missing entry.", getTaskName());
                     if (info != null) {

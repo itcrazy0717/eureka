@@ -194,6 +194,7 @@ class TaskExecutors<ID, T> {
                     // 提取任务信息
                     List<T> tasks = getTasksOf(holders);
                     // 处理任务
+	                // com.netflix.eureka.cluster.ReplicationTaskProcessor#process(java.util.List<com.netflix.eureka.cluster.ReplicationTask>)
                     ProcessingResult result = processor.process(tasks);
                     switch (result) {
                         case Success:
