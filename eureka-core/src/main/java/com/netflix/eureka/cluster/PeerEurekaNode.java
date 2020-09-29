@@ -210,7 +210,7 @@ public class PeerEurekaNode {
             public EurekaHttpResponse<InstanceInfo> execute() throws Throwable {
                 return replicationClient.sendHeartBeat(appName, id, info, overriddenStatus);
             }
-
+            // 注意回调函数
             @Override
             public void handleFailure(int statusCode, Object responseEntity) throws Throwable {
                 // 处理失败的心跳任务，注意父类的handleFailure方法为空
@@ -240,6 +240,7 @@ public class PeerEurekaNode {
             }
         };
         long expiryTime = System.currentTimeMillis() + getLeaseRenewalOf(info);
+        // 通过批量任务处理器将任务放入阻塞队列
         batchingDispatcher.process(taskId("heartbeat", info), replicationTask, expiryTime);
     }
 

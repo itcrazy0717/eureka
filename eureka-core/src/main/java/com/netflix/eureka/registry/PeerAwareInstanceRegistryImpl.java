@@ -644,9 +644,11 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
 
 			for (final PeerEurekaNode node : peerEurekaNodes.getPeerEurekaNodes()) {
 				// If the url represents this host, do not replicate to yourself.
+				// 过滤掉本机host url
 				if (peerEurekaNodes.isThisMyUrl(node.getServiceUrl())) {
 					continue;
 				}
+				// 通过不同的action进行集群同步
 				replicateInstanceActionsToPeers(action, appName, id, info, newStatus, node);
 			}
 		} finally {
@@ -664,16 +666,18 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
 		try {
 			InstanceInfo infoFromRegistry;
 			CurrentRequestVersion.set(Version.V2);
+			// 根据不同类型，进行集群实例同步
 			switch (action) {
 				case Cancel:
 					node.cancel(appName, id);
 					break;
-				case Heartbeat:
+				case Heartbeat: // 心跳消息
 					InstanceStatus overriddenStatus = overriddenInstanceStatusMap.get(id);
+					// 根据实例id获取注册实例信息
 					infoFromRegistry = getInstanceByAppAndId(appName, id, false);
 					node.heartbeat(appName, id, infoFromRegistry, overriddenStatus, false);
 					break;
-				case Register:
+				case Register: // 注册消息
 					node.register(info);
 					break;
 				case StatusUpdate:
